@@ -10,7 +10,7 @@ import {
   DollarSign, Zap, Cpu, Smartphone, RotateCcw, Timer, Eye, Wifi, RefreshCw,
   HelpCircle, Upload, Banknote, Printer, AlertTriangle, CheckCircle2,
   Navigation, ChevronLeft, ChevronRight, Megaphone, Sparkles, Star, Moon,
-  Sun, Globe, Heart, Crown, Flame
+  Globe, Crown,
 } from "lucide-react";
 
 /* =========================================================

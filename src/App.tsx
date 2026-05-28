@@ -1416,7 +1416,7 @@ export default function BrewCafeUltraElite() {
         {/* CUSTOMER VIEW */}
         {view === "customer" && (
           <motion.main key="customer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto">
+            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto" style={{scrollMarginTop: "80px"}}>
 
             {/* HERO */}
             <div className="relative h-[55vh] sm:h-[65vh] overflow-hidden mb-0">
@@ -2858,5 +2858,5 @@ export default function BrewCafeUltraElite() {
         )}
       </AnimatePresence>
     </div>
-  );
+ );
 }

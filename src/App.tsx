@@ -366,6 +366,7 @@ function MenuRowCarousel({
         type="button"
         onClick={() => { rowRef.current?.scrollBy({ left: -280, behavior: "smooth" }); pauseAuto(); setTimeout(resumeAuto, 4000); }}
         className="absolute ltr:left-0 rtl:right-0 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-zinc-900/95 border border-zinc-700 text-white flex items-center justify-center shadow-xl hover:bg-[#800020] hover:border-[#800020] transition-all ltr:-translate-x-3 rtl:translate-x-3"
+        style={{ willChange: "transform" }}
       >
         <ChevronLeft size={15} />
       </button>
@@ -373,6 +374,7 @@ function MenuRowCarousel({
         type="button"
         onClick={() => { rowRef.current?.scrollBy({ left: 280, behavior: "smooth" }); pauseAuto(); setTimeout(resumeAuto, 4000); }}
         className="absolute ltr:right-0 rtl:left-0 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-zinc-900/95 border border-zinc-700 text-white flex items-center justify-center shadow-xl hover:bg-[#800020] hover:border-[#800020] transition-all ltr:translate-x-3 rtl:-translate-x-3"
+        style={{ willChange: "transform" }}
       >
         <ChevronRight size={15} />
       </button>
@@ -389,12 +391,13 @@ function MenuRowCarousel({
         {items.map(item => (
           <div
             key={item.id}
-            style={{ scrollSnapAlign: "start", minWidth: "260px", maxWidth: "260px" }}
+            style={{ scrollSnapAlign: "start", minWidth: "260px", maxWidth: "260px", willChange: "transform" }}
             className={`group rounded-3xl border bg-zinc-950/60 backdrop-blur-md overflow-hidden flex flex-col justify-between
               transition-transform duration-200 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/40 flex-shrink-0 ${
               !item.inStock ? "border-zinc-900/40 opacity-40" : "border-zinc-800/60 hover:border-zinc-600"
             }`}
           >
+            {/* Image */}
             <div className="relative h-44 overflow-hidden bg-zinc-900">
               {item.img
                 ? <img src={item.img} alt={item.name[lang as keyof LocalizedString]}
@@ -419,6 +422,7 @@ function MenuRowCarousel({
                 </span>
               </div>
             </div>
+            {/* Body */}
             <div className="p-4 flex-1 flex flex-col justify-between gap-3">
               <div>
                 <div className="flex justify-between items-start gap-2 mb-1.5">
@@ -905,6 +909,7 @@ export default function BrewCafeUltraElite() {
 
   useEffect(() => { if (pin.trim().length === 4) verifyPin(pin); }, [pin, verifyPin]);
 
+  /* ── MENU SPLIT INTO 4 ROWS ── */
   const filteredMenu = useMemo(() => {
     return menuData?.filter(item => {
       const catOk = activeCategory === "all" || item.cat?.toLowerCase() === activeCategory.toLowerCase();
@@ -1247,38 +1252,22 @@ export default function BrewCafeUltraElite() {
 
   /* =========================================================
      RENDER
-     FIX 1: Removed transform/backfaceVisibility from root div — these create
-     a stacking context that clips fixed children, causing scroll-behind-navbar.
-     FIX 4: Added proper viewport meta via style — width 100%, overflow-x hidden
   ========================================================= */
   return (
     <div
       dir={lang === "ar" ? "rtl" : "ltr"}
       style={{
         fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "'Inter', sans-serif",
-        /* REMOVED: transform: translateZ(0) — this was creating a new stacking context
-           that clipped fixed positioned children, causing the scroll overlap bug */
-        minHeight: "100dvh",
-        overflowX: "hidden",
-        width: "100%",
+        /* FIX: white flash on fast scroll — GPU-composite the background */
+        transform: "translateZ(0)",
+        WebkitTransform: "translateZ(0)",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
       }}
-      className={`w-full text-white bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
+      className={`min-h-screen w-full text-white overflow-x-hidden bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
     >
-      {/* GLOBAL STYLE — ensures no body overflow + smooth scrolling */}
-      <style>{`
-        html, body {
-          overflow-x: hidden;
-          scroll-behavior: smooth;
-          -webkit-text-size-adjust: 100%;
-        }
-        * { box-sizing: border-box; }
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-
-      {/* ─── TOAST NOTIFICATIONS ─── */}
-      {/* FIX 2: Toasts use pointer-events-none wrapper so they never block modal clicks */}
-      <div className="fixed bottom-5 ltr:left-5 rtl:right-5 z-[9999] flex flex-col gap-2 max-w-[calc(100vw-2.5rem)] w-full sm:max-w-sm pointer-events-none">
+      {/* TOAST NOTIFICATIONS */}
+      <div className="fixed bottom-5 left-5 z-[9999] flex flex-col gap-2 max-w-[calc(100vw-2.5rem)] w-full sm:max-w-sm pointer-events-none">
         <AnimatePresence>
           {toasts.map(toast => (
             <motion.div key={toast.id}
@@ -1307,7 +1296,7 @@ export default function BrewCafeUltraElite() {
               <AlertTriangle size={36} className="text-red-400 mx-auto mb-3" />
               <h3 className="font-black text-base mb-2 text-white">{lang === "ar" ? "تحذير: إجراء لا يمكن التراجع عنه" : "Warning: This Action Cannot Be Undone"}</h3>
               <p className="text-xs text-zinc-400 mb-5 leading-relaxed">
-                {lang === "ar" ? "سيتم حذف جميع الطلبات نهائياً من قاعدة البيانات." : "This will permanently delete ALL orders from the database."}
+                {lang === "ar" ? "سيتم حذف جميع الطلبات نهائياً من قاعدة البيانات. هذا الإجراء لا يمكن التراجع عنه." : "This will permanently delete ALL orders from the database. This cannot be undone."}
               </p>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowClearConfirm(false)}
@@ -1324,8 +1313,8 @@ export default function BrewCafeUltraElite() {
         )}
       </AnimatePresence>
 
-      {/* BACKGROUND VISUALS — FIX: no transform on these either */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {/* BACKGROUND VISUALS */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" style={{ transform: "translateZ(0)" }}>
         <div className="absolute -top-40 ltr:-left-40 rtl:-right-40 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#800020]/20 to-transparent blur-[160px]" />
         <div className="absolute bottom-[-10%] ltr:right-[-10%] rtl:left-[-10%] w-[800px] h-[800px] rounded-full bg-gradient-to-tr from-[#d9ab7d]/10 to-transparent blur-[200px]" />
         {activeEvent && (
@@ -1340,7 +1329,7 @@ export default function BrewCafeUltraElite() {
         {timerPopup && (
           <motion.div initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -40 }}
             transition={{ type: "spring", stiffness: 300, damping: 32 }}
-            className="fixed top-24 left-4 right-4 mx-auto max-w-md z-[200] rounded-[30px] bg-zinc-950/95 border border-zinc-800 p-6 backdrop-blur-3xl text-center shadow-2xl">
+            className="fixed top-24 left-4 right-4 mx-auto max-w-md z-[999] rounded-[30px] bg-zinc-950/95 border border-zinc-800 p-6 backdrop-blur-3xl text-center shadow-2xl">
             <div className="flex items-center justify-center gap-3 mb-3">
               <Timer className="text-[#d9ab7d]" size={20} />
               <h4 className="font-black text-sm tracking-wider uppercase">{lang === "ar" ? "معيار سرعة التحضير" : "Brew Time Standard"}</h4>
@@ -1356,64 +1345,48 @@ export default function BrewCafeUltraElite() {
         )}
       </AnimatePresence>
 
-      {/* ─────────────────────────────────────────────────────────
-          TOP NAV
-          FIX 4: Responsive nav — shrinks gracefully on mobile
-      ───────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 lg:px-8 py-3 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl">
+      {/* TOP NAV */}
+      <nav className="fixed top-0 left-0 right-0 z-[100] px-3 sm:px-6 lg:px-8 py-3 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-2">
-          {/* Logo */}
           <div onClick={() => { switchView("customer"); setIsSuperAdminVerified(false); }}
-            className="cursor-pointer select-none group flex-shrink-0 min-w-0">
+            className="cursor-pointer select-none group flex-shrink-0">
             <div className="flex items-center gap-1.5" dir="ltr">
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tighter group-hover:text-[#d9ab7d] transition-colors leading-none truncate">
-                Brew Café
-              </h1>
-              {activeEvent && <span className="text-base inline-block select-none flex-shrink-0">{activeEvent.sticker}</span>}
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tighter group-hover:text-[#d9ab7d] transition-colors leading-none">Brew Café</h1>
+              {activeEvent && <span className="text-base inline-block select-none">{activeEvent.sticker}</span>}
             </div>
-            <p className="hidden sm:block text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.3em] uppercase text-zinc-500 font-bold truncate max-w-[180px] sm:max-w-none">
+            <p className="hidden xs:block text-[8px] sm:text-[9px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-zinc-500 font-bold truncate max-w-[140px] sm:max-w-none">
               {lang === "ar" ? "بريو كافيه · المدينة المنورة" : "Brew Café · Madinah"}
             </p>
           </div>
 
-          {/* Right controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* DB status badge — only in non-customer views */}
             {view !== "customer" && (
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 h-8 rounded-xl bg-zinc-900/90 border border-zinc-800 text-[9px] font-black tracking-wider uppercase text-zinc-400">
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-zinc-900/90 border border-zinc-800 text-[9px] font-black tracking-wider uppercase text-zinc-400">
                 {isSyncing ? <RefreshCw size={10} className="text-[#d9ab7d] animate-spin" /> : <Wifi size={10} className="text-emerald-400" />}
                 <span className="font-mono text-[8px]">
-                  {isSyncing ? "SYNC" : dbStatus === "Connected Successfully!" ? "LIVE" : "ERR"}
+                  {isSyncing ? (lang === "ar" ? "مزامنة" : "SYNC") : dbStatus === "Connected Successfully!" ? (lang === "ar" ? "متصل" : "LIVE") : (lang === "ar" ? "خطأ" : "ERR")}
                 </span>
               </div>
             )}
-
-            {/* Clock */}
             <button type="button" onClick={() => setTimerPopup(true)}
-              className="h-8 sm:h-9 px-2 sm:px-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 text-xs text-zinc-300 hover:bg-[#800020] hover:text-white transition-all">
-              <Timer size={11} className="text-[#d9ab7d] flex-shrink-0" />
-              <span className="font-mono font-bold tracking-wider text-[10px] sm:text-xs">
+              className="h-9 px-2.5 sm:px-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 text-xs text-zinc-300 hover:bg-[#800020] hover:text-white transition-all group">
+              <Timer size={12} className="text-[#d9ab7d] flex-shrink-0" />
+              <span className="font-mono font-bold tracking-wider text-[11px] sm:text-xs">
                 {currentTime.toLocaleTimeString(lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}
               </span>
             </button>
-
-            {/* Language toggle */}
             <div onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-              className="h-8 sm:h-9 w-14 sm:w-20 rounded-full bg-zinc-900 border border-zinc-800 relative cursor-pointer flex items-center justify-between px-1.5 sm:px-2 text-[9px] sm:text-[10px] font-black tracking-widest select-none flex-shrink-0">
+              className="h-9 w-16 sm:w-20 rounded-full bg-zinc-900 border border-zinc-800 relative cursor-pointer flex items-center justify-between px-1.5 sm:px-2 text-[9px] sm:text-[10px] font-black tracking-widest select-none flex-shrink-0">
               <span className={`z-10 transition-all duration-300 ${lang === "en" ? "text-black font-black" : "text-zinc-500"}`}>EN</span>
               <span className={`z-10 transition-all duration-300 ${lang === "ar" ? "text-black font-black" : "text-zinc-500"}`}>AR</span>
               <motion.div layout transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className={`absolute top-1 bottom-1 w-6 sm:w-8 rounded-full bg-[#d9ab7d] ${lang === "en" ? "left-1" : "left-7 sm:left-10"}`} />
+                className={`absolute top-1 bottom-1 w-7 sm:w-8 rounded-full bg-[#d9ab7d] ${lang === "en" ? "left-1" : "left-8 sm:left-10"}`} />
             </div>
-
-            {/* Customer-only: Bell + Cart */}
             {view === "customer" && (
-              <div className="flex items-center gap-1.5">
-                {/* FIX 2: Notification bell — always visible if pastOrders exist */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {pastOrders.length > 0 && (
-                  <button type="button"
-                    onClick={(e) => { e.stopPropagation(); setIsNotificationOpen(true); }}
-                    className="relative h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
+                  <button type="button" onClick={() => setIsNotificationOpen(true)}
+                    className="relative h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
                     <BellRing size={14} className="text-[#d9ab7d]" />
                     {activeCustomerOrders.length > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-white text-black text-[8px] font-black flex items-center justify-center shadow-lg animate-pulse">
@@ -1423,7 +1396,7 @@ export default function BrewCafeUltraElite() {
                   </button>
                 )}
                 <button type="button" onClick={() => setIsCartOpen(true)}
-                  className="relative h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
+                  className="relative h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
                   <ShoppingBag size={14} />
                   {cart.length > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-white text-black text-[8px] font-black flex items-center justify-center shadow-lg">
@@ -1437,16 +1410,13 @@ export default function BrewCafeUltraElite() {
         </div>
       </nav>
 
-      {/* ═══════════════════════════════════════════════════════
-          VIEWS
-      ═══════════════════════════════════════════════════════ */}
+      {/* ===== VIEWS ===== */}
       <AnimatePresence mode="wait">
 
-        {/* ─── CUSTOMER VIEW ─── */}
+        {/* CUSTOMER VIEW */}
         {view === "customer" && (
           <motion.main key="customer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            /* FIX 1: pt-16 matches nav height (h-[60px]) — no content overlap */
-            className="relative z-10 pt-16 pb-24 w-full max-w-[1600px] mx-auto overflow-x-hidden">
+            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto">
 
             {/* HERO */}
             <div className="relative h-[55vh] sm:h-[65vh] overflow-hidden mb-0">
@@ -1459,14 +1429,12 @@ export default function BrewCafeUltraElite() {
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
                 </motion.div>
               ))}
-              {/* Dots */}
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {BREW_GALLERY.map((_, idx) => (
                   <button key={idx} type="button" onClick={() => setHeroIndex(idx)}
                     className={`rounded-full transition-all duration-500 ${idx === heroIndex ? "w-6 h-2 bg-[#d9ab7d]" : "w-2 h-2 bg-white/30"}`} />
                 ))}
               </div>
-              {/* Hero text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
                 <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                   className="text-[9px] sm:text-[10px] tracking-[0.35em] uppercase text-zinc-400 mb-3 font-bold">
@@ -1486,9 +1454,8 @@ export default function BrewCafeUltraElite() {
                   {lang === "ar" ? "اطلب الآن" : "Order Now"}
                 </motion.button>
               </div>
-              {/* Stats bar */}
               <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-md border-t border-white/5 py-3 px-6 z-10">
-                <div className="max-w-4xl mx-auto flex items-center justify-center gap-4 sm:gap-10 flex-wrap">
+                <div className="max-w-4xl mx-auto flex items-center justify-center gap-6 sm:gap-10 flex-wrap">
                   {[
                     { icon: "☕", en: "Specialty Coffee", ar: "قهوة مختصة" },
                     { icon: "⭐", en: "4.4 Rating (373)", ar: "تقييم 4.4" },
@@ -1506,13 +1473,15 @@ export default function BrewCafeUltraElite() {
 
             {/* ACTIVE EVENT BANNER */}
             <AnimatePresence>
-              {activeEvent && <ActiveEventBanner event={activeEvent} lang={lang} />}
+              {activeEvent && (
+                <ActiveEventBanner event={activeEvent} lang={lang} />
+              )}
             </AnimatePresence>
 
             {/* MENU SECTION */}
             <div id="menu-section" className="px-4 sm:px-6 lg:px-8 pt-4">
 
-              {/* PROMO BLOCK */}
+              {/* ── PROMO BLOCK — NOW DIRECTLY UNDER EVENT BANNER / ABOVE SEARCH ── */}
               <AnimatePresence>
                 {promoBlock.active && (
                   <motion.div
@@ -1526,44 +1495,44 @@ export default function BrewCafeUltraElite() {
                         boxShadow: `0 0 60px 0 ${promoBlock.bgColor}30, 0 2px 20px 0 #00000080`,
                         border: `1px solid ${promoBlock.bgColor}40`,
                       }}>
-                      <div className="absolute -top-20 ltr:-left-20 rtl:-right-20 w-64 h-64 rounded-full pointer-events-none"
+                      <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full pointer-events-none"
                         style={{ background: `radial-gradient(circle, ${promoBlock.bgColor}50 0%, transparent 70%)`, filter: "blur(40px)" }} />
                       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                         style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
-                      <div className="relative z-10 p-5 sm:p-8">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
-                          <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl select-none"
+                      <div className="relative z-10 p-6 sm:p-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                          <div className="flex items-start gap-5">
+                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-3xl select-none"
                               style={{ background: `${promoBlock.bgColor}60`, border: `1px solid ${promoBlock.bgColor}80` }}>
                               {promoBlock.emoji}
                             </div>
-                            <div className="min-w-0">
+                            <div>
                               <p className="text-[9px] uppercase tracking-[0.35em] font-black mb-1.5"
-                                style={{ color: promoBlock.bgColor === "#800020" ? "#d9ab7d" : "rgba(255,255,255,0.5)" }}>
+                                style={{ color: `${promoBlock.bgColor === "#800020" ? "#d9ab7d" : "rgba(255,255,255,0.5)"}` }}>
                                 {lang === "ar" ? "عروض وفعاليات" : "Promotions & Activities"}
                               </p>
-                              <h3 className="text-lg sm:text-2xl font-black text-white leading-tight tracking-tight mb-2">
+                              <h3 className="text-xl sm:text-2xl font-black text-white leading-tight tracking-tight mb-2">
                                 {lang === "ar" ? promoBlock.titleAr : promoBlock.titleEn}
                               </h3>
-                              <p className="text-xs sm:text-sm text-white/65 leading-relaxed max-w-md">
+                              <p className="text-sm text-white/65 leading-relaxed max-w-md">
                                 {lang === "ar" ? promoBlock.bodyAr : promoBlock.bodyEn}
                               </p>
                             </div>
                           </div>
                           {(promoBlock.ctaEn || promoBlock.ctaAr) && (
-                            <div className="flex-shrink-0 w-full sm:w-auto">
+                            <div className="flex-shrink-0 ltr:ml-auto rtl:mr-auto">
                               {promoBlock.ctaUrl ? (
                                 <a href={promoBlock.ctaUrl} target="_blank" rel="noreferrer"
-                                  className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-5 sm:px-7 w-full sm:w-auto rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-[#d9ab7d] transition-all shadow-xl shadow-black/30 whitespace-nowrap">
+                                  className="inline-flex items-center gap-2 h-12 px-7 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-[#d9ab7d] transition-all shadow-xl shadow-black/30 whitespace-nowrap group">
                                   <span>{lang === "ar" ? promoBlock.ctaAr : promoBlock.ctaEn}</span>
-                                  <span className="text-base">→</span>
+                                  <span className="text-base group-hover:translate-x-0.5 transition-transform">→</span>
                                 </a>
                               ) : (
                                 <button type="button"
-                                  onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
-                                  className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-5 sm:px-7 w-full sm:w-auto rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-[#d9ab7d] transition-all shadow-xl shadow-black/30 whitespace-nowrap">
+                                  onClick={() => { const el = document.getElementById('menu-section'); el?.scrollIntoView({ behavior: 'smooth' }); }}
+                                  className="inline-flex items-center gap-2 h-12 px-7 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-[#d9ab7d] transition-all shadow-xl shadow-black/30 whitespace-nowrap group">
                                   <span>{lang === "ar" ? promoBlock.ctaAr : promoBlock.ctaEn}</span>
-                                  <span className="text-base">→</span>
+                                  <span className="text-base group-hover:translate-x-0.5 transition-transform">→</span>
                                 </button>
                               )}
                             </div>
@@ -1577,8 +1546,8 @@ export default function BrewCafeUltraElite() {
 
               {/* SEARCH */}
               <div className="mb-4">
-                <div className="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-5 flex items-center gap-3 h-12 sm:h-14 focus-within:border-zinc-600 transition-colors">
-                  <Search size={16} className="text-zinc-500 flex-shrink-0" />
+                <div className="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-5 flex items-center gap-3 h-14 focus-within:border-zinc-600 transition-colors">
+                  <Search size={18} className="text-zinc-500 flex-shrink-0" />
                   <input value={search} onChange={e => setSearch(e.target.value)}
                     placeholder={lang === "ar" ? "ابحث عن خيارك المفضل..." : "Search the menu..."}
                     className="bg-transparent flex-1 outline-none text-sm placeholder-zinc-600 text-white min-w-0" />
@@ -1594,7 +1563,7 @@ export default function BrewCafeUltraElite() {
               <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-none">
                 {["all", "hot", "cold", "dessert"].map(cat => (
                   <button key={cat} type="button" onClick={() => setActiveCategory(cat)}
-                    className={`h-10 sm:h-11 px-4 sm:px-5 rounded-xl text-xs uppercase tracking-widest font-black transition-all border cursor-pointer select-none flex-shrink-0 ${
+                    className={`h-11 px-5 rounded-xl text-xs uppercase tracking-widest font-black transition-all border cursor-pointer select-none flex-shrink-0 ${
                       activeCategory === cat ? "bg-[#800020] border-[#800020] text-white shadow-lg shadow-[#800020]/20" : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                     }`}>
                     {lang === "ar" ? (cat === "all" ? "الكل" : cat === "hot" ? "ساخن" : cat === "cold" ? "بارد" : "الحلويات") : cat}
@@ -1607,11 +1576,14 @@ export default function BrewCafeUltraElite() {
                 <div className="text-center py-20 text-zinc-600 flex flex-col items-center justify-center">
                   <Search size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-bold">{lang === "ar" ? "لا توجد نتائج مطابقة" : "No items match your search."}</p>
+                  <p className="text-xs text-zinc-700 mt-1">{lang === "ar" ? "حاول تعديل البحث أو الفئة" : "Try adjusting the filter or search term."}</p>
                 </div>
               ) : (
                 <div className="space-y-6 mb-6">
                   {menuRows.map((row, rowIdx) => (
-                    <MenuRowCarousel key={rowIdx} items={row} lang={lang} onAdd={addToCart} />
+                    <div key={rowIdx}>
+                      <MenuRowCarousel items={row} lang={lang} onAdd={addToCart} />
+                    </div>
                   ))}
                 </div>
               )}
@@ -1650,10 +1622,10 @@ export default function BrewCafeUltraElite() {
           </motion.main>
         )}
 
-        {/* ─── LOGIN VIEW ─── */}
+        {/* LOGIN VIEW */}
         {view === "login" && (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-zinc-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-4">
+            className="fixed inset-0 z-[999] bg-zinc-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 sm:p-8 text-center shadow-2xl">
               <Lock size={32} className="mx-auto mb-4 text-[#d9ab7d]" />
               <h3 className="text-base font-black tracking-widest uppercase mb-1">{lang === "ar" ? "بوابة الدخول الآمنة" : "Secure Access Portal"}</h3>
@@ -1690,12 +1662,11 @@ export default function BrewCafeUltraElite() {
           </motion.div>
         )}
 
-        {/* ─── HUB VIEW ─── */}
+        {/* HUB VIEW */}
         {view === "hub" && (
           <motion.div key="hub" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-            /* FIX 4: removed min-h-screen + fixed inset pattern — use pt-16 for nav clearance */
-            className="fixed inset-0 z-[150] bg-black p-4 sm:p-8 flex items-center justify-center overflow-y-auto">
-            <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 my-auto">
+            className="fixed inset-0 z-[999] bg-black p-4 sm:p-8 flex items-center justify-center">
+            <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <button type="button" onClick={() => switchView("staff")}
                 className="rounded-3xl border border-zinc-800 bg-zinc-900/30 p-6 ltr:text-left rtl:text-right hover:border-zinc-700 transition-all group relative cursor-pointer">
                 <ChefHat size={30} className="text-zinc-400 group-hover:text-white mb-4 transition-colors" />
@@ -1741,10 +1712,10 @@ export default function BrewCafeUltraElite() {
           </motion.div>
         )}
 
-        {/* ─── STAFF VIEW ─── */}
+        {/* STAFF VIEW */}
         {view === "staff" && (
           <motion.main key="staff" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="pt-20 pb-20 px-4 w-full max-w-6xl mx-auto">
+            className="pt-24 pb-20 px-4 w-full max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <p className="text-[10px] uppercase text-zinc-500 tracking-widest">{lang === "ar" ? "تحديث مباشر" : "Live Kitchen View"}</p>
@@ -1754,7 +1725,6 @@ export default function BrewCafeUltraElite() {
                 {lang === "ar" ? "تغيير العرض" : "Switch View"}
               </button>
             </div>
-            {/* Status counts */}
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4 text-center">
               {ORDER_STATUSES.map(st => {
                 const count = orders.filter(o => o.status === st).length;
@@ -1770,7 +1740,6 @@ export default function BrewCafeUltraElite() {
                 );
               })}
             </div>
-            {/* Filter tabs */}
             <div className="flex gap-1.5 mb-5 overflow-x-auto scrollbar-none pb-1">
               {[
                 { key: "active", en: "Active", ar: "النشطة" },
@@ -1792,7 +1761,6 @@ export default function BrewCafeUltraElite() {
                 </div>
               )}
             </div>
-            {/* Orders list */}
             <div className="space-y-4">
               {staffVisibleOrders.map(order => {
                 const elapsedMinutes = order.created_at ? Math.floor((Date.now() - order.created_at) / 60000) : 0;
@@ -1873,7 +1841,9 @@ export default function BrewCafeUltraElite() {
                               <RotateCcw size={12} /> {lang === "ar" ? "تراجع" : "UNDO"}
                             </button>
                           ) : (
-                            <button type="button"
+                            /* ── FIX: DONE button — sets "Out for Delivery" for delivery orders ── */
+                            <button
+                              type="button"
                               onClick={() => {
                                 if (order.method === "delivery" && order.status !== "Out for Delivery") {
                                   updateOrderStatusCloud(order.id, "Out for Delivery");
@@ -1881,7 +1851,8 @@ export default function BrewCafeUltraElite() {
                                   updateOrderStatusCloud(order.id, "Delivered");
                                 }
                               }}
-                              className="h-9 px-3 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider cursor-pointer">
+                              className="h-9 px-3 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                            >
                               {order.method === "delivery" && order.status !== "Out for Delivery"
                                 ? (lang === "ar" ? "مع الديليفري" : "OUT FOR DELIVERY")
                                 : (lang === "ar" ? "إتمام" : "DONE")}
@@ -1913,21 +1884,18 @@ export default function BrewCafeUltraElite() {
           </motion.main>
         )}
 
-        {/* ─── OWNER VIEW ─── */}
+        {/* OWNER VIEW */}
         {view === "owner" && (
           <motion.main key="owner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            /* FIX 4: pt-16 for nav, no zoom, proper flex for sidebar layout */
-            className="pt-16 min-h-screen flex flex-col lg:flex-row w-full">
-
-            {/* Sidebar */}
-            <aside className={`border-b lg:border-b-0 ${lang === "ar" ? "lg:border-l lg:border-r-0" : "lg:border-r lg:border-l-0"} border-zinc-800 bg-zinc-950/80 backdrop-blur-md transition-all duration-300 flex-shrink-0 w-full lg:block ${sidebarOpen ? "lg:w-56" : "lg:w-16"}`}>
+            className="pt-20 min-h-screen flex flex-col lg:flex-row w-full">
+            <div className={`border-b lg:border-b-0 ${lang === "ar" ? "lg:border-l lg:border-r-0" : "lg:border-r lg:border-l-0"} border-zinc-800 bg-zinc-950/60 backdrop-blur-md transition-all duration-300 w-full lg:block ${sidebarOpen ? "lg:w-56" : "lg:w-16"}`}>
               <div className="p-3 hidden lg:block">
                 <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)}
                   className="h-9 w-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto cursor-pointer">
                   {sidebarOpen ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
                 </button>
               </div>
-              <div className="p-2 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1 pb-3 lg:pb-6 scrollbar-none">
+              <div className="p-2 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1 pb-3 lg:pb-6">
                 {[
                   { key: "overview", icon: Cpu, labelEn: "Dashboard", labelAr: "لوحة التحكم" },
                   { key: "orders", icon: Receipt, labelEn: "Orders", labelAr: "الطلبات" },
@@ -1939,26 +1907,24 @@ export default function BrewCafeUltraElite() {
                   const Icon = tab.icon;
                   return (
                     <button key={tab.key} type="button" onClick={() => setOwnerTab(tab.key)}
-                      className={`h-10 rounded-xl flex items-center gap-2.5 px-3 transition-all whitespace-nowrap text-xs cursor-pointer flex-shrink-0 ${
+                      className={`h-10 rounded-xl flex items-center gap-2.5 px-3 transition-all whitespace-nowrap text-xs cursor-pointer ${
                         ownerTab === tab.key ? "bg-[#800020] text-white font-black" : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
                       }`}>
-                      <Icon size={13} className="flex-shrink-0" />
+                      <Icon size={13} />
                       {(sidebarOpen || isMobile) && <span>{lang === "ar" ? tab.labelAr : tab.labelEn}</span>}
                     </button>
                   );
                 })}
                 <button type="button" onClick={() => { switchView("hub"); setIsSuperAdminVerified(false); }}
-                  className="h-10 rounded-xl flex items-center gap-2.5 px-3 text-xs text-red-400 hover:bg-red-950/20 whitespace-nowrap lg:mt-6 cursor-pointer flex-shrink-0">
-                  <LogOut size={13} className="flex-shrink-0" />
+                  className="h-10 rounded-xl flex items-center gap-2.5 px-3 text-xs text-red-400 hover:bg-red-950/20 whitespace-nowrap lg:mt-6 cursor-pointer">
+                  <LogOut size={13} />
                   {(sidebarOpen || isMobile) && <span>{lang === "ar" ? "قفل الجلسة" : "Lock Session"}</span>}
                 </button>
               </div>
-            </aside>
+            </div>
 
-            {/* Main content */}
-            <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden min-w-0">
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
 
-              {/* OVERVIEW TAB */}
               {ownerTab === "overview" && (
                 <div className="space-y-6">
                   <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1966,13 +1932,12 @@ export default function BrewCafeUltraElite() {
                       <p className="text-[10px] tracking-widest text-zinc-500 uppercase font-black">BREW CAFÉ OS</p>
                       <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{lang === "ar" ? "لوحة التحكم المباشرة" : "Live Command Dashboard"}</h2>
                     </div>
-                    <div className="h-10 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-400 text-xs font-bold self-start sm:self-auto">
+                    <div className="h-10 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-400 text-xs font-bold">
                       <ShieldCheck size={13} /> {dbStatus === "Connected Successfully!" ? (lang === "ar" ? "متصل" : "Live") : (lang === "ar" ? "خطأ في الاتصال" : "Connection Error")}
                     </div>
                   </header>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    {/* Revenue card */}
-                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[185px] relative overflow-hidden sm:col-span-2 xl:col-span-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[185px] relative overflow-hidden">
                       <div className="flex justify-between items-center gap-2">
                         <span className="text-[10px] tracking-wider uppercase text-zinc-500 font-bold">{lang === "ar" ? "الإيرادات" : "Revenue"}</span>
                         <DollarSign size={13} className="text-[#d9ab7d]" />
@@ -2011,7 +1976,7 @@ export default function BrewCafeUltraElite() {
                         <span>C: <span className="font-mono text-red-400">-{cancelledRevenue.toFixed(0)}</span></span>
                       </div>
                     </div>
-                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[120px]">
+                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[140px]">
                       <div className="flex justify-between items-start">
                         <span className="text-[10px] tracking-wider uppercase text-zinc-500 font-bold">{lang === "ar" ? "الطلبات النشطة" : "Active Orders"}</span>
                         <Zap size={13} className="text-[#d9ab7d]" />
@@ -2021,17 +1986,17 @@ export default function BrewCafeUltraElite() {
                         <p className="text-[10px] text-zinc-400 mt-1">~{activeOrdersCount > 0 ? activeOrdersCount * 3 : 2} {lang === "ar" ? "دق انتظار" : "min avg. wait"}</p>
                       </div>
                     </div>
-                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[120px]">
+                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[140px]">
                       <div className="flex justify-between items-start">
-                        <span className="text-[10px] tracking-wider uppercase text-zinc-500 font-bold">{lang === "ar" ? "متأخرة" : "Delayed"}</span>
+                        <span className="text-[10px] tracking-wider uppercase text-zinc-500 font-bold">{lang === "ar" ? "متأخرة" : "Delayed Orders"}</span>
                         <BellRing size={13} className="text-red-400" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black text-red-400 font-mono">{lateOrdersCount}</h3>
+                        <h3 className="text-2xl font-black text-red-400 font-mono">{lateOrdersCount} <span className="text-xs text-zinc-600">{lang === "ar" ? "متأخر" : "Delayed"}</span></h3>
                         <p className="text-[10px] text-zinc-400 mt-1">{lang === "ar" ? "تجاوزت 5 دقائق" : "Over 5 minutes"}</p>
                       </div>
                     </div>
-                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[120px]">
+                    <div className="p-5 rounded-2xl bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 flex flex-col justify-between min-h-[140px]">
                       <div className="flex justify-between items-start">
                         <span className="text-[10px] tracking-wider uppercase text-zinc-500 font-bold">{lang === "ar" ? "المنيو" : "Menu Items"}</span>
                         <Smartphone size={13} className="text-emerald-400" />
@@ -2048,12 +2013,12 @@ export default function BrewCafeUltraElite() {
                       <div className="space-y-3.5">
                         {[...menuData].sort((a, b) => b.sold - a.sold).slice(0, 3).map(item => (
                           <div key={item.id} className="flex items-center gap-3 bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800">
-                            {item.img && <img src={item.img} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" alt="" loading="lazy" />}
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-bold text-sm text-white truncate">{item.name?.[lang as keyof LocalizedString]}</h5>
+                            {item.img && <img src={item.img} className="w-12 h-12 rounded-lg object-cover" alt="" loading="lazy" />}
+                            <div className="flex-1">
+                              <h5 className="font-bold text-sm text-white">{item.name?.[lang as keyof LocalizedString]}</h5>
                               <p className="text-[10px] text-zinc-500">{item.sold} {lang === "ar" ? "مبيعات" : "sold"}</p>
                             </div>
-                            <span className="text-xs font-black font-mono text-[#d9ab7d] flex-shrink-0">{item.price} SAR</span>
+                            <span className="text-xs font-black font-mono text-[#d9ab7d]">{item.price} SAR</span>
                           </div>
                         ))}
                       </div>
@@ -2075,7 +2040,6 @@ export default function BrewCafeUltraElite() {
                 </div>
               )}
 
-              {/* ORDERS TAB */}
               {ownerTab === "orders" && (
                 <div>
                   <h3 className="text-xl font-black mb-4">{lang === "ar" ? "سجل الطلبات" : "Orders Database"}</h3>
@@ -2083,35 +2047,38 @@ export default function BrewCafeUltraElite() {
                     <div className="flex-1 bg-black border border-zinc-800 rounded-xl px-3 flex items-center gap-2 h-10">
                       <Search size={13} className="text-zinc-500 flex-shrink-0" />
                       <input value={orderSearch} onChange={e => setOrderSearch(e.target.value)}
-                        placeholder={lang === "ar" ? "بحث..." : "Search by name, order ID, or phone..."}
+                        placeholder={lang === "ar" ? "بحث بالاسم أو رقم الطلب أو الجوال..." : "Search by name, order ID, or phone..."}
                         className="bg-transparent flex-1 outline-none text-xs text-white placeholder-zinc-600 min-w-0" />
-                      {orderSearch && <button type="button" onClick={() => setOrderSearch("")} className="text-zinc-500 hover:text-white flex-shrink-0"><X size={12} /></button>}
+                      {orderSearch && <button type="button" onClick={() => setOrderSearch("")} className="text-zinc-500 hover:text-white"><X size={12} /></button>}
                     </div>
                     <div className="flex gap-2 items-center flex-wrap">
-                      <div className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-xl px-3 h-10 flex-1 sm:flex-none">
+                      <div className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-xl px-3 h-10">
                         <Calendar size={11} className="text-zinc-500 flex-shrink-0" />
                         <input type="date" value={orderDateFrom} onChange={e => setOrderDateFrom(e.target.value)}
-                          className="bg-transparent outline-none text-[11px] text-zinc-300 w-full sm:w-32 cursor-pointer" />
+                          className="bg-transparent outline-none text-[11px] text-zinc-300 w-32 cursor-pointer" />
                       </div>
-                      <span className="text-zinc-600 text-xs font-bold flex-shrink-0">→</span>
-                      <div className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-xl px-3 h-10 flex-1 sm:flex-none">
+                      <span className="text-zinc-600 text-xs font-bold">→</span>
+                      <div className="flex items-center gap-1.5 bg-black border border-zinc-800 rounded-xl px-3 h-10">
                         <Calendar size={11} className="text-zinc-500 flex-shrink-0" />
                         <input type="date" value={orderDateTo} onChange={e => setOrderDateTo(e.target.value)}
-                          className="bg-transparent outline-none text-[11px] text-zinc-300 w-full sm:w-32 cursor-pointer" />
+                          className="bg-transparent outline-none text-[11px] text-zinc-300 w-32 cursor-pointer" />
                       </div>
                       {(orderDateFrom || orderDateTo || orderSearch) && (
                         <button type="button" onClick={() => { setOrderSearch(""); setOrderDateFrom(""); setOrderDateTo(""); }}
                           className="h-10 px-3 rounded-xl bg-zinc-800 text-zinc-400 text-[10px] font-black flex items-center gap-1 hover:bg-zinc-700 hover:text-white transition-all cursor-pointer">
-                          <RotateCcw size={11} /> {lang === "ar" ? "مسح" : "Clear"}
+                          <RotateCcw size={11} /> {lang === "ar" ? "مسح الفلتر" : "Clear Filter"}
                         </button>
                       )}
                     </div>
                   </div>
-                  <p className="text-[10px] text-zinc-500 mb-3 font-bold">{filteredOwnerOrders.length} {lang === "ar" ? "نتيجة" : "results"}</p>
+                  <p className="text-[10px] text-zinc-500 mb-3 font-bold">
+                    {filteredOwnerOrders.length} {lang === "ar" ? "نتيجة" : "results"}
+                    {(orderSearch || orderDateFrom || orderDateTo) ? (lang === "ar" ? " — فلتر نشط" : " — filter active") : ""}
+                  </p>
                   <div className="space-y-3">
                     {filteredOwnerOrders.map(o => (
                       <div key={o.id} className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/40 flex flex-col sm:flex-row justify-between gap-3 text-xs">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-mono text-[#d9ab7d] font-bold">#{o.id} — {o.customer}</p>
                             <span className="text-zinc-500 font-normal">({o.phone})</span>
@@ -2119,11 +2086,11 @@ export default function BrewCafeUltraElite() {
                               {new Date(o.created_at).toLocaleString(lang === "ar" ? "ar-SA" : "en-US", { dateStyle: "short", timeStyle: "short" })}
                             </span>
                           </div>
-                          <p className="text-zinc-500 mb-2 truncate">{o.items.map(i => `${i.qty}x ${i.name}`).join(", ")}</p>
+                          <p className="text-zinc-500 mb-2">{o.items.map(i => `${i.qty}x ${i.name}`).join(", ")}</p>
                           {o.notes && <p className="text-amber-400 text-[10px] italic mb-1">📝 {o.notes}</p>}
                           {o.method === "delivery" && o.deliveryAddress && (
-                            <p className="text-blue-400 text-[10px] mb-1 truncate">
-                              📍 {o.deliveryAddress}{o.deliveryArea ? ` · ${o.deliveryArea}` : ""}
+                            <p className="text-blue-400 text-[10px] mb-1">
+                              📍 {o.deliveryAddress}{o.deliveryArea ? ` · ${o.deliveryArea}` : ""}{o.deliveryLandmark ? ` · ${o.deliveryLandmark}` : ""}
                             </p>
                           )}
                           <div className="flex flex-wrap gap-2 text-[10px]">
@@ -2134,7 +2101,7 @@ export default function BrewCafeUltraElite() {
                             <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-400">{o.status}</span>
                           </div>
                         </div>
-                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
+                        <div className="flex flex-col items-end gap-2 min-w-[110px]">
                           <p className="font-black text-white">{o.total.toFixed(2)} SAR</p>
                           <div className="flex gap-1">
                             {o.paymentMethod === "cash" && o.paymentStatus === "pending" && (
@@ -2167,7 +2134,6 @@ export default function BrewCafeUltraElite() {
                 </div>
               )}
 
-              {/* MENU TAB */}
               {ownerTab === "menu" && (
                 <div>
                   <div className="flex justify-between items-center mb-6">
@@ -2181,7 +2147,7 @@ export default function BrewCafeUltraElite() {
                     <div className="mb-4 p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 flex items-start gap-2">
                       <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
                       <p className="text-[10px] text-amber-300 leading-relaxed">
-                        <strong>Supabase not connected.</strong> Enable anon SELECT/INSERT/UPDATE/DELETE on <code>brew_cafe_menu</code> and <code>brew_cafe_orders</code> tables, and anon uploads on <code>brew-cafe-images</code> bucket.
+                        <strong>Supabase not connected.</strong> Go to your Supabase project → Authentication → Policies → enable anon SELECT/INSERT/UPDATE/DELETE on <code>brew_cafe_menu</code> and <code>brew_cafe_orders</code> tables. Also enable anon uploads on the <code>brew-cafe-images</code> storage bucket.
                       </p>
                     </div>
                   )}
@@ -2190,7 +2156,7 @@ export default function BrewCafeUltraElite() {
                       <motion.form initial={{ opacity: 0, y: -15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
                         transition={{ type: "spring", stiffness: 300, damping: 32 }}
                         onSubmit={deployProductListing}
-                        className="mb-6 p-5 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-4">
+                        className="mb-6 p-5 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-4 max-w-4xl">
                         <div className="flex justify-between items-center pb-2 border-b border-zinc-800">
                           <h4 className="text-xs font-black uppercase text-[#d9ab7d]">{lang === "ar" ? "إضافة منتج جديد" : "Deploy New Product"}</h4>
                           <button type="button" onClick={() => { setIsDeployModalOpen(false); setListingErrors({}); }} className="text-zinc-500 hover:text-white cursor-pointer"><X size={16} /></button>
@@ -2220,7 +2186,7 @@ export default function BrewCafeUltraElite() {
                               <div className="flex gap-2">
                                 <label className="flex-1 flex items-center justify-center gap-2 h-9 px-3 bg-zinc-900 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-400 hover:text-white hover:border-zinc-500 transition-all cursor-pointer">
                                   <Upload size={13} className={isUploading ? "animate-bounce text-[#d9ab7d]" : ""} />
-                                  <span>{isUploading ? "Uploading..." : (lang === "ar" ? "رفع صورة" : "Upload Image")}</span>
+                                  <span>{isUploading ? (lang === "ar" ? "جاري الرفع..." : "Uploading...") : (lang === "ar" ? "رفع صورة" : "Upload Image")}</span>
                                   <input type="file" accept="image/*" onChange={handleStorageBucketImageUpload} disabled={isUploading} className="hidden" />
                                 </label>
                                 <input value={newListing.imgUrl} onChange={e => setNewListing({ ...newListing, imgUrl: e.target.value })}
@@ -2230,7 +2196,7 @@ export default function BrewCafeUltraElite() {
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                               <div>
-                                <label className="block text-[10px] text-zinc-400 mb-1 font-bold">{lang === "ar" ? "السعر" : "Price (SAR)"} *</label>
+                                <label className="block text-[10px] text-zinc-400 mb-1 font-bold">{lang === "ar" ? "السعر (ريال)" : "Price (SAR)"} *</label>
                                 <input required type="number" step="0.01" min="0.01" value={newListing.price}
                                   onChange={e => { setNewListing({ ...newListing, price: e.target.value }); setListingErrors(p => ({ ...p, price: "" })); }}
                                   placeholder="15"
@@ -2294,14 +2260,14 @@ export default function BrewCafeUltraElite() {
                           </button>
                           <button type="submit" disabled={isSyncing}
                             className="h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50">
-                            {isSyncing ? "Saving..." : (lang === "ar" ? "نشر المنتج" : "Deploy Product")}
+                            {isSyncing ? (lang === "ar" ? "جاري الحفظ..." : "Saving...") : (lang === "ar" ? "نشر المنتج" : "Deploy Product")}
                           </button>
                         </div>
                       </motion.form>
                     )}
                   </AnimatePresence>
                   <div className="rounded-xl border border-zinc-800 overflow-x-auto bg-zinc-950/20">
-                    <table className="w-full min-w-[600px] text-xs text-left">
+                    <table className="w-full min-w-full text-xs text-left">
                       <thead className="bg-zinc-900/60 text-zinc-400">
                         <tr>
                           <th className="p-4 uppercase tracking-wider font-bold">{lang === "ar" ? "المنتج" : "Product"}</th>
@@ -2316,10 +2282,10 @@ export default function BrewCafeUltraElite() {
                           <tr key={item.id} className="border-t border-zinc-900 hover:bg-zinc-900/20">
                             <td className="p-4 font-black text-white">
                               <div className="flex items-center gap-3">
-                                {item.img && <img src={item.img} className="w-8 h-8 rounded object-cover border border-zinc-800 flex-shrink-0" alt="" loading="lazy" />}
-                                <div className="min-w-0">
-                                  <span className="truncate block">{item?.name?.en}</span>
-                                  <span className="font-normal text-[11px] text-zinc-500 truncate block">{item?.name?.ar}</span>
+                                {item.img && <img src={item.img} className="w-8 h-8 rounded object-cover border border-zinc-800" alt="" loading="lazy" />}
+                                <div>
+                                  {item?.name?.en}
+                                  <span className="block font-normal text-[11px] text-zinc-500">{item?.name?.ar}</span>
                                 </div>
                               </div>
                             </td>
@@ -2328,7 +2294,7 @@ export default function BrewCafeUltraElite() {
                             <td className="p-4">
                               <button type="button" onClick={() => toggleStockStatusCloud(item.id, item?.inStock)}
                                 disabled={stockTogglingRef.current.has(item.id)}
-                                className={`h-8 px-3 rounded-lg font-black text-[10px] uppercase transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap ${
+                                className={`h-8 px-3 rounded-lg font-black text-[10px] uppercase transition-all cursor-pointer disabled:opacity-50 ${
                                   item?.inStock !== false ? "bg-emerald-950 text-emerald-400 border border-emerald-800" : "bg-red-950 text-red-400 border border-red-800"
                                 }`}>
                                 {item?.inStock !== false ? (lang === "ar" ? "متوفر" : "In Stock") : (lang === "ar" ? "نفذ" : "Out of Stock")}
@@ -2348,61 +2314,55 @@ export default function BrewCafeUltraElite() {
                 </div>
               )}
 
-              {/* ─── PROMO TAB ─── */}
-              {/* FIX 3: Preview now reads from `promoEdit` (live editing state), not `promoBlock` (saved state) */}
               {ownerTab === "promo" && (
                 <div className="max-w-2xl">
-                  <div className="flex items-start justify-between mb-6 gap-4">
-                    <div className="min-w-0">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
                       <p className="text-[10px] tracking-widest text-zinc-500 uppercase font-black mb-1">BREW CAFÉ OS</p>
-                      <h3 className="text-2xl font-black tracking-tight">{lang === "ar" ? "إدارة العروض" : "Promotions Manager"}</h3>
-                      <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed">
-                        {lang === "ar" ? "يظهر أعلى قائمة المنيو للعملاء. يمكن تفعيله أو إخفاؤه في أي وقت." : "Displayed above the menu on the customer view. Toggle visibility anytime."}
+                      <h3 className="text-2xl font-black tracking-tight">{lang === "ar" ? "إدارة العروض والفعاليات" : "Promotions Manager"}</h3>
+                      <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed max-w-sm">
+                        {lang === "ar" ? "يظهر أعلى قائمة المنيو مباشرةً للعملاء — تحت بانر المناسبة. يمكن تفعيله أو إخفاؤه في أي وقت." : "Displayed above the menu on the customer view — below the event banner. Toggle visibility anytime."}
                       </p>
                     </div>
-                    <div className={`flex-shrink-0 h-8 px-3 rounded-full text-[10px] font-black flex items-center gap-1.5 ${
+                    <div className={`flex-shrink-0 h-8 px-3 rounded-full text-[10px] font-black flex items-center gap-1.5 mt-1 ${
                       promoBlock.active ? "bg-emerald-950 border border-emerald-800 text-emerald-400" : "bg-zinc-900 border border-zinc-800 text-zinc-500"
                     }`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${promoBlock.active ? "bg-emerald-400 animate-pulse" : "bg-zinc-600"}`} />
                       {promoBlock.active ? (lang === "ar" ? "مُفعّل" : "Live") : (lang === "ar" ? "مخفي" : "Hidden")}
                     </div>
                   </div>
-
-                  {/* LIVE PREVIEW — uses promoEdit so color changes show instantly */}
                   <div className="mb-6">
                     <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mb-3 flex items-center gap-2">
                       <Eye size={11} className="text-[#d9ab7d]" />
                       {lang === "ar" ? "معاينة مباشرة" : "Live Preview"}
                     </p>
-                    <motion.div
-                      key={promoEdit.bgColor + promoEdit.emoji + promoEdit.titleEn}
-                      initial={{ opacity: 0.8, scale: 0.99 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                      className="relative rounded-2xl overflow-hidden"
-                      style={{
-                        background: `linear-gradient(135deg, ${promoEdit.bgColor}e0 0%, #0d0d0d 55%, ${promoEdit.bgColor}30 100%)`,
-                        border: `1px solid ${promoEdit.bgColor}50`,
-                        boxShadow: `0 0 40px ${promoEdit.bgColor}25`,
-                      }}>
-                      <div className="p-5 flex items-start gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                          style={{ background: `${promoEdit.bgColor}50`, border: `1px solid ${promoEdit.bgColor}70` }}>
-                          {promoEdit.emoji || "✨"}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-black text-sm text-white leading-tight mb-1 truncate">
-                            {(lang === "ar" ? promoEdit.titleAr : promoEdit.titleEn) || "Title..."}
-                          </h4>
-                          <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
-                            {(lang === "ar" ? promoEdit.bodyAr : promoEdit.bodyEn) || "Body text..."}
-                          </p>
+                    {promoBlock.active ? (
+                      <div className="relative rounded-2xl overflow-hidden"
+                        style={{ background: `linear-gradient(135deg, ${promoBlock.bgColor}e0 0%, #0d0d0d 55%, ${promoBlock.bgColor}30 100%)`, border: `1px solid ${promoBlock.bgColor}50`, boxShadow: `0 0 40px ${promoBlock.bgColor}25` }}>
+                        <div className="p-5 flex items-start gap-4">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                            style={{ background: `${promoBlock.bgColor}50`, border: `1px solid ${promoBlock.bgColor}70` }}>
+                            {promoBlock.emoji}
+                          </div>
+                          <div>
+                            <h4 className="font-black text-sm text-white leading-tight mb-1">
+                              {lang === "ar" ? promoBlock.titleAr : promoBlock.titleEn}
+                            </h4>
+                            <p className="text-xs text-white/60 leading-relaxed">
+                              {lang === "ar" ? promoBlock.bodyAr : promoBlock.bodyEn}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </motion.div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-zinc-800 p-6 text-center">
+                        <Megaphone size={24} className="mx-auto mb-2 text-zinc-700" />
+                        <p className="text-xs text-zinc-600 font-bold">
+                          {lang === "ar" ? "العرض مخفي حالياً — فعّله ليظهر للعملاء" : "Promotion is hidden — activate to show customers"}
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  {/* EDIT FORM */}
                   <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 space-y-5">
                     <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
                       <h4 className="text-xs font-black uppercase text-[#d9ab7d] tracking-wider flex items-center gap-2">
@@ -2416,44 +2376,26 @@ export default function BrewCafeUltraElite() {
                         {promoBlock.active ? (lang === "ar" ? "إخفاء" : "Hide Now") : (lang === "ar" ? "تفعيل" : "Activate")}
                       </button>
                     </div>
-
-                    {/* Emoji + Color */}
-                    <div className="flex items-end gap-4 flex-wrap">
+                    <div className="flex items-end gap-4">
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "الرمز" : "Emoji"}</label>
                         <input value={promoEdit.emoji} onChange={e => setPromoEdit(p => ({ ...p, emoji: e.target.value }))}
                           placeholder="✨" maxLength={4}
                           className="w-16 h-12 text-2xl text-center bg-black border border-zinc-800 rounded-xl text-white outline-none focus:border-[#800020] transition-colors" />
                       </div>
-                      <div className="flex-1 min-w-[200px]">
+                      <div className="flex-1">
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "لون الهوية" : "Accent Color"}</label>
                         <div className="flex gap-2 items-center flex-wrap">
                           {["#800020", "#1a6b3c", "#1a3d6b", "#5a1a6b", "#6b4a1a", "#1a5a6b"].map(c => (
-                            <button key={c} type="button"
-                              onClick={() => setPromoEdit(p => ({ ...p, bgColor: c }))}
+                            <button key={c} type="button" onClick={() => setPromoEdit(p => ({ ...p, bgColor: c }))}
                               style={{ background: c }}
-                              className={`h-8 w-8 rounded-lg border-2 transition-all cursor-pointer ${promoEdit.bgColor === c ? "border-white scale-110 shadow-lg shadow-white/20" : "border-transparent hover:scale-105 hover:border-white/30"}`} />
+                              className={`h-8 w-8 rounded-lg border-2 transition-all cursor-pointer ${promoEdit.bgColor === c ? "border-white scale-110 shadow-lg" : "border-transparent hover:scale-105"}`} />
                           ))}
-                          <div className="relative">
-                            <input type="color" value={promoEdit.bgColor}
-                              onChange={e => setPromoEdit(p => ({ ...p, bgColor: e.target.value }))}
-                              title="Custom color"
-                              className="h-8 w-8 rounded-lg cursor-pointer border border-zinc-700 bg-black opacity-0 absolute inset-0" />
-                            <div className="h-8 w-8 rounded-lg border border-zinc-700 flex items-center justify-center text-[9px] text-zinc-400 font-bold pointer-events-none"
-                              style={{ background: promoEdit.bgColor }}>
-                              +
-                            </div>
-                          </div>
-                        </div>
-                        {/* Color preview swatch */}
-                        <div className="mt-2 flex items-center gap-2">
-                          <div className="h-5 w-5 rounded-md border border-zinc-700 flex-shrink-0" style={{ background: promoEdit.bgColor }} />
-                          <span className="text-[10px] text-zinc-500 font-mono">{promoEdit.bgColor}</span>
+                          <input type="color" value={promoEdit.bgColor} onChange={e => setPromoEdit(p => ({ ...p, bgColor: e.target.value }))}
+                            title="Custom color" className="h-8 w-8 rounded-lg cursor-pointer border border-zinc-700 bg-black" />
                         </div>
                       </div>
                     </div>
-
-                    {/* Titles */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "العنوان (EN)" : "Title (English)"}</label>
@@ -2468,8 +2410,6 @@ export default function BrewCafeUltraElite() {
                           className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none focus:border-[#800020] transition-colors text-right" />
                       </div>
                     </div>
-
-                    {/* Body */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "النص (EN)" : "Body (English)"}</label>
@@ -2480,12 +2420,10 @@ export default function BrewCafeUltraElite() {
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "النص (AR)" : "Body (Arabic)"}</label>
                         <textarea value={promoEdit.bodyAr} onChange={e => setPromoEdit(p => ({ ...p, bodyAr: e.target.value }))}
-                          placeholder="اكتب وصف العرض..." rows={3}
+                          placeholder="اكتب وصف العرض أو الفعالية..." rows={3}
                           className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none resize-none focus:border-[#800020] transition-colors text-right" />
                       </div>
                     </div>
-
-                    {/* CTA */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-1.5 font-bold uppercase tracking-wider">{lang === "ar" ? "نص الزر (EN)" : "Button (EN)"}</label>
@@ -2506,8 +2444,6 @@ export default function BrewCafeUltraElite() {
                           className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none font-mono text-[11px] focus:border-[#800020] transition-colors" />
                       </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex gap-3 pt-2 border-t border-zinc-800">
                       <button type="button"
                         onClick={() => {
@@ -2521,7 +2457,7 @@ export default function BrewCafeUltraElite() {
                         onClick={() => {
                           const reset = { ...DEFAULT_PROMO, active: false };
                           setPromoBlock(reset); setPromoEdit(reset);
-                          showToast(lang === "ar" ? "تمت إعادة التعيين" : "Reset to defaults.", "info", "promo-reset");
+                          showToast(lang === "ar" ? "تمت إعادة التعيين إلى الافتراضي" : "Reset to defaults.", "info", "promo-reset");
                         }}
                         className="h-11 px-5 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs font-black uppercase cursor-pointer hover:bg-zinc-700 hover:text-white transition-colors flex items-center gap-2">
                         <RotateCcw size={13} /> {lang === "ar" ? "إعادة" : "Reset"}
@@ -2536,23 +2472,37 @@ export default function BrewCafeUltraElite() {
                 <div>
                   <div className="mb-8">
                     <p className="text-[10px] tracking-widest text-zinc-500 uppercase font-black mb-1">BREW CAFÉ OS</p>
-                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">{lang === "ar" ? "إدارة المناسبات" : "Event Theme Manager"}</h3>
+                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+                      {lang === "ar" ? "إدارة المناسبات والمظاهر" : "Event Theme Manager"}
+                    </h3>
                     <p className="text-xs text-zinc-500 leading-relaxed max-w-lg">
-                      {lang === "ar" ? "فعّل مظهر المناسبة ليتحول شكل الموقع بالكامل فوراً للعملاء." : "Activate an event theme to transform the entire customer experience instantly."}
+                      {lang === "ar"
+                        ? "فعّل مظهر المناسبة ليتحول شكل الموقع بالكامل — الألوان والخلفية والعناصر المتحركة — للعملاء فوراً."
+                        : "Activate an event theme to transform the entire customer experience — colors, backgrounds & animated effects — instantly."}
                     </p>
                   </div>
                   <AnimatePresence>
                     {activeEvent && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                        className="mb-6 p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4 backdrop-blur-sm flex-wrap"
-                        style={{ background: `${EVENT_META[activeEvent.id]?.glowColor}20`, borderColor: `${EVENT_META[activeEvent.id]?.accentColor}30` }}>
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mb-6 p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4 backdrop-blur-sm"
+                        style={{
+                          background: `${EVENT_META[activeEvent.id]?.glowColor}20`,
+                          borderColor: `${EVENT_META[activeEvent.id]?.accentColor}30`,
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <motion.div className="h-2.5 w-2.5 rounded-full"
+                          <motion.div
+                            className="h-2.5 w-2.5 rounded-full"
                             style={{ background: EVENT_META[activeEvent.id]?.accentColor || "#fff" }}
                             animate={{ opacity: [1, 0.3, 1], scale: [1, 1.4, 1] }}
-                            transition={{ duration: 1.5, repeat: Infinity }} />
-                          <span className="text-sm font-black text-white">{lang === "ar" ? "المظهر النشط:" : "Live Theme:"}</span>
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          />
+                          <span className="text-sm font-black text-white">
+                            {lang === "ar" ? "المظهر النشط الآن:" : "Live Theme:"}
+                          </span>
                           <span className="text-sm font-black" style={{ color: EVENT_META[activeEvent.id]?.accentColor }}>
                             {activeEvent.sticker} {lang === "ar" ? activeEvent.name.ar : activeEvent.name.en}
                           </span>
@@ -2566,34 +2516,44 @@ export default function BrewCafeUltraElite() {
                   </AnimatePresence>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     {ISLAMIC_EVENTS.map(ev => (
-                      <EventCard key={ev.id} ev={ev} isActive={activeEvent?.id === ev.id} lang={lang}
-                        onToggle={() => setActiveEvent(activeEvent?.id === ev.id ? null : ev)} />
+                      <EventCard
+                        key={ev.id}
+                        ev={ev}
+                        isActive={activeEvent?.id === ev.id}
+                        lang={lang}
+                        onToggle={() => setActiveEvent(activeEvent?.id === ev.id ? null : ev)}
+                      />
                     ))}
                   </div>
                   <div className="mt-8 p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800 flex items-start gap-3">
                     <Sparkles size={14} className="text-[#d9ab7d] flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-black text-zinc-300 mb-1">{lang === "ar" ? "كيف يعمل نظام المظاهر؟" : "How do event themes work?"}</p>
+                      <p className="text-xs font-black text-zinc-300 mb-1">
+                        {lang === "ar" ? "كيف يعمل نظام المظاهر؟" : "How do event themes work?"}
+                      </p>
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        {lang === "ar" ? "عند تفعيل مظهر، يتغير لون الخلفية بالكامل مع تأثيرات حركية. يتم حفظ الإعداد تلقائياً عبر جميع الأجهزة." : "When activated, the background transforms with animated particles and glow effects. Settings auto-sync across all devices."}
+                        {lang === "ar"
+                          ? "عند تفعيل مظهر، يتغير لون الخلفية بالكامل، وتظهر بانر المناسبة في صفحة العملاء مع تأثيرات حركية وجزيئات عائمة. يتم حفظ الإعداد تلقائياً عبر جميع الأجهزة."
+                          : "When activated, the entire background transforms, an immersive event banner appears on the customer page with animated particles and glow effects. Settings auto-sync across all devices."}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* SETTINGS TAB */}
               {ownerTab === "settings" && (
                 <div className="max-w-md space-y-6">
                   <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
                     <h3 className="text-lg font-black mb-1">{lang === "ar" ? "تغيير الرمز السري" : "Change Access PIN"}</h3>
-                    <p className="text-xs text-zinc-500 mb-4">{lang === "ar" ? "الافتراضي: 1234" : "Default PIN is 1234"}</p>
+                    <p className="text-xs text-zinc-500 mb-4">{lang === "ar" ? "الرمز مخزن بشكل آمن — الافتراضي: 1234" : "PIN stored securely — default is 1234"}</p>
                     <div className="space-y-3">
-                      <input type="password" placeholder={lang === "ar" ? "الرمز السري الجديد (4 أرقام)" : "New 4-Digit PIN"}
-                        maxLength={4} value={pinChangeInput}
-                        onChange={e => { if (/^\d*$/.test(e.target.value)) setPinChangeInput(e.target.value); }}
-                        className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-[#800020]" />
-                      <p className="text-[10px] text-zinc-600">{lang === "ar" ? "أرقام فقط، 4 خانات بالضبط" : "Digits only, exactly 4 characters"}</p>
+                      <div>
+                        <input type="password" placeholder={lang === "ar" ? "الرمز السري الجديد (4 أرقام)" : "New 4-Digit PIN"}
+                          maxLength={4} value={pinChangeInput}
+                          onChange={e => { if (/^\d*$/.test(e.target.value)) setPinChangeInput(e.target.value); }}
+                          className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-[#800020]" />
+                        <p className="text-[10px] text-zinc-600 mt-1">{lang === "ar" ? "أرقام فقط، 4 خانات بالضبط" : "Digits only, exactly 4 characters"}</p>
+                      </div>
                       <button type="button"
                         onClick={() => {
                           if (isValidPin(pinChangeInput)) {
@@ -2609,15 +2569,17 @@ export default function BrewCafeUltraElite() {
                   </div>
                   <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
                     <h3 className="text-sm font-black mb-1 text-white">{lang === "ar" ? "رقم واتساب الأوامر" : "WhatsApp Order Number"}</h3>
-                    <p className="text-xs text-zinc-500 mb-3">{lang === "ar" ? "رقم استلام إشعارات الطلبات" : "Number to receive order notifications"}</p>
+                    <p className="text-xs text-zinc-500 mb-3">{lang === "ar" ? "رقم استلام إشعارات الطلبات (أرقام فقط)" : "Number to receive order notifications (digits only)"}</p>
                     <div className="space-y-3">
-                      <input type="text" placeholder="966502013071" value={whatsappNumber}
-                        onChange={e => { if (/^[0-9\s+\-]*$/.test(e.target.value)) setWhatsappNumber(e.target.value); }}
-                        className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-lg text-xs font-mono text-white outline-none focus:border-[#800020]" />
-                      <p className="text-[10px] text-zinc-600">{lang === "ar" ? "مثال: 966502013071" : "Example: 966502013071 (no + needed)"}</p>
+                      <div>
+                        <input type="text" placeholder="966502013071" value={whatsappNumber}
+                          onChange={e => { if (/^[0-9\s+\-]*$/.test(e.target.value)) setWhatsappNumber(e.target.value); }}
+                          className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-lg text-xs font-mono text-white outline-none focus:border-[#800020]" />
+                        <p className="text-[10px] text-zinc-600 mt-1">{lang === "ar" ? "مثال: 966502013071 (بدون +)" : "Example: 966502013071 (no + needed)"}</p>
+                      </div>
                       <button type="button"
                         onClick={() => {
-                          if (isValidWhatsapp(whatsappNumber)) { showToast("WhatsApp number saved.", "success", "wa-saved"); }
+                          if (isValidWhatsapp(whatsappNumber)) { showToast("WhatsApp number saved successfully.", "success", "wa-saved"); }
                           else { showToast("Invalid WhatsApp number format.", "error", "wa-invalid"); }
                         }}
                         className="h-9 w-full rounded-lg bg-zinc-800 text-zinc-200 text-xs font-black uppercase tracking-wider cursor-pointer hover:bg-zinc-700 transition-colors">
@@ -2628,7 +2590,7 @@ export default function BrewCafeUltraElite() {
                   <div className="rounded-2xl border border-red-900/40 bg-red-950/10 p-6">
                     <h3 className="text-sm font-black mb-1 text-red-400">{lang === "ar" ? "منطقة الخطر: مسح الطلبات" : "Danger Zone: Clear Orders"}</h3>
                     <p className="text-xs text-zinc-500 mb-4">
-                      {lang === "ar" ? "يحذف جميع الطلبات نهائياً ولا يمكن التراجع عنه." : "Permanently deletes ALL orders. Cannot be undone."}
+                      {lang === "ar" ? "هذا الإجراء يحذف جميع الطلبات نهائياً من قاعدة البيانات ولا يمكن التراجع عنه." : "This permanently deletes ALL orders from the database and cannot be undone."}
                     </p>
                     <button type="button" onClick={() => setShowClearConfirm(true)}
                       className="h-10 w-full rounded-lg bg-red-950/60 border border-red-800 text-red-400 text-xs font-black uppercase tracking-wider cursor-pointer hover:bg-red-900/60 transition-colors flex items-center justify-center gap-2">
@@ -2639,24 +2601,21 @@ export default function BrewCafeUltraElite() {
                     <h4 className="text-xs font-black text-zinc-500 uppercase tracking-wider mb-2">{lang === "ar" ? "معلومات النظام" : "System Information"}</h4>
                     <div className="space-y-1 text-[11px] text-zinc-500">
                       <p>PIN: {lang === "ar" ? "مخزن بأمان في قاعدة البيانات" : "Stored securely in database"}</p>
-                      <p>WhatsApp: {lang === "ar" ? "مزامن عبر الأجهزة" : "Synced across devices"}</p>
-                      <p className="text-emerald-400/70 text-[10px]">✓ {lang === "ar" ? "جميع الإعدادات تتزامن تلقائياً." : "All settings sync automatically."}</p>
+                      <p>WhatsApp: {lang === "ar" ? "مخزن ومزامن عبر الأجهزة" : "Stored and synced across devices"}</p>
+                      <p className="text-emerald-400/70 text-[10px]">{lang === "ar" ? "✓ جميع الإعدادات تتزامن تلقائياً عبر كل الأجهزة." : "✓ All settings sync automatically across all devices."}</p>
                     </div>
                   </div>
                 </div>
               )}
-
             </div>
           </motion.main>
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════════════════════
-          CART DRAWER
-      ═══════════════════════════════════════════════════════ */}
+      {/* CART DRAWER */}
       <AnimatePresence>
         {isCartOpen && (
-          <div className="fixed inset-0 z-[400] flex justify-end">
+          <div className="fixed inset-0 z-[500] flex justify-end">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsCartOpen(false)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -2677,6 +2636,7 @@ export default function BrewCafeUltraElite() {
                 <div className="text-center py-12">
                   <ShoppingBag size={44} className="mx-auto mb-3 text-zinc-800" />
                   <p className="text-xs text-zinc-500 font-medium">{lang === "ar" ? "حقيبتك فارغة" : "Your bag is empty."}</p>
+                  <p className="text-[10px] text-zinc-600 mt-1">{lang === "ar" ? "أضف منتجاً من القائمة" : "Add items from the menu to get started."}</p>
                 </div>
               ) : (
                 <>
@@ -2738,7 +2698,7 @@ export default function BrewCafeUltraElite() {
                                   className={`w-full h-9 px-3 bg-black border rounded-lg text-xs text-white outline-none ${cartErrors.deliveryAddress ? "border-red-600" : "border-zinc-800 focus:border-blue-600"}`} />
                                 {cartErrors.deliveryAddress && <p className="text-red-400 text-[10px] mt-1">{cartErrors.deliveryAddress}</p>}
                               </div>
-                              <input type="text" placeholder={lang === "ar" ? "الحي (اختياري)" : "Neighbourhood (optional)"}
+                              <input type="text" placeholder={lang === "ar" ? "الحي (اختياري)" : "Neighbourhood / District (optional)"}
                                 value={customerInfo.deliveryArea}
                                 onChange={e => setCustomerInfo({ ...customerInfo, deliveryArea: e.target.value })}
                                 className="w-full h-9 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-blue-600" />
@@ -2746,6 +2706,9 @@ export default function BrewCafeUltraElite() {
                                 value={customerInfo.deliveryLandmark}
                                 onChange={e => setCustomerInfo({ ...customerInfo, deliveryLandmark: e.target.value })}
                                 className="w-full h-9 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-blue-600" />
+                              <p className="text-[10px] text-zinc-500 leading-relaxed">
+                                {lang === "ar" ? "سيُرسل عنوانك مع الطلب عبر واتساب لتأكيد التوصيل." : "Your address will be sent with the order via WhatsApp for delivery confirmation."}
+                              </p>
                             </div>
                           </div>
                         </motion.div>
@@ -2776,7 +2739,7 @@ export default function BrewCafeUltraElite() {
                       {customerInfo.paymentMethod === "online" && (
                         <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                           className="text-[10px] text-emerald-400 mt-1.5 font-bold">
-                          {lang === "ar" ? "✓ سيتم فتح واتساب لإتمام الدفع" : "✓ WhatsApp will open to complete payment"}
+                          {lang === "ar" ? "✓ سيتم فتح واتساب لإتمام عملية الدفع" : "✓ WhatsApp will open to complete payment"}
                         </motion.p>
                       )}
                     </div>
@@ -2785,7 +2748,7 @@ export default function BrewCafeUltraElite() {
                         <span>{lang === "ar" ? "المجموع قبل الضريبة:" : "Subtotal:"}</span><span>{subtotal.toFixed(2)} SAR</span>
                       </div>
                       <div className="flex justify-between text-zinc-500">
-                        <span>{lang === "ar" ? "ضريبة 15%:" : "VAT (15%):"}</span><span>{vat.toFixed(2)} SAR</span>
+                        <span>{lang === "ar" ? "ضريبة القيمة المضافة (15%):" : "VAT (15%):"}</span><span>{vat.toFixed(2)} SAR</span>
                       </div>
                       <div className="flex justify-between text-white font-black pt-1.5 border-t border-zinc-800/80 text-sm">
                         <span className="text-zinc-200 font-sans">{lang === "ar" ? "الإجمالي:" : "Total:"}</span>
@@ -2810,25 +2773,18 @@ export default function BrewCafeUltraElite() {
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════════════════════
-          PAST ORDERS NOTIFICATION MODAL
-          FIX 2: z-index raised to z-[800] — above cart z-[400] and below toasts z-[9999]
-          FIX 2: stopPropagation on modal body prevents backdrop click from firing
-      ═══════════════════════════════════════════════════════ */}
+      {/* PAST ORDERS MODAL */}
       <AnimatePresence>
         {isNotificationOpen && (
-          <div className="fixed inset-0 z-[800] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsNotificationOpen(false)}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: "spring", stiffness: 300, damping: 32 }}
-              onClick={e => e.stopPropagation()}
-              className="relative w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-zinc-800 rounded-[28px] p-6 shadow-2xl flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-900 mb-4 flex-shrink-0">
+              className="relative w-full max-w-2xl max-h-[80vh] bg-zinc-950 border border-zinc-800 rounded-[28px] p-6 shadow-2xl flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-900 mb-4">
                 <div className="flex items-center gap-2.5">
                   <BellRing size={15} className="text-[#d9ab7d] animate-pulse" />
                   <h3 className="text-sm font-black tracking-widest uppercase text-zinc-200">{lang === "ar" ? "طلباتك" : "Your Orders"}</h3>
@@ -2844,64 +2800,58 @@ export default function BrewCafeUltraElite() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-                {pastOrders.length === 0 ? (
-                  <div className="text-center py-16 text-zinc-600">
-                    <BellRing size={40} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-bold">{lang === "ar" ? "لا توجد طلبات سابقة" : "No past orders yet."}</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {pastOrders.map(pOrd => {
-                      const liveOrder = orders.find(o => o.id === pOrd.id);
-                      const currentStatus = liveOrder?.status || pOrd.status;
-                      const isDelivery = (liveOrder?.method || pOrd.method) === "delivery";
-                      const isActive = currentStatus !== "Delivered" && currentStatus !== "Cancelled";
-                      const statusColor: Record<string, string> = {
-                        Queued: "text-amber-400", Preparing: "text-blue-400", Ready: "text-emerald-400",
-                        "Out for Delivery": "text-sky-400",
-                        Cancelled: "text-red-400", Delivered: "text-zinc-400"
-                      };
-                      return (
-                        <div key={pOrd.id}
-                          className={`rounded-2xl p-4 border flex flex-col justify-between shadow-lg transition-all ${
-                            isActive ? "bg-zinc-900/70 border-zinc-700" : "bg-zinc-900/30 border-zinc-800/60 opacity-60"
-                          }`}>
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="flex items-center gap-2">
-                                {isActive && <div className="h-1.5 w-1.5 rounded-full bg-[#d9ab7d] animate-pulse" />}
-                                <span className="font-black text-xs text-zinc-200">{pOrd.customer}</span>
-                              </div>
-                              <span className="font-mono text-[11px] font-black text-[#d9ab7d] bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-800">#{pOrd.id}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {pastOrders.map(pOrd => {
+                    const liveOrder = orders.find(o => o.id === pOrd.id);
+                    const currentStatus = liveOrder?.status || pOrd.status;
+                    const isDelivery = (liveOrder?.method || pOrd.method) === "delivery";
+                    const isActive = currentStatus !== "Delivered" && currentStatus !== "Cancelled";
+                    const statusColor: Record<string, string> = {
+                      Queued: "text-amber-400", Preparing: "text-blue-400", Ready: "text-emerald-400",
+                      "Out for Delivery": "text-sky-400",
+                      Cancelled: "text-red-400", Delivered: "text-zinc-400"
+                    };
+                    return (
+                      <div key={pOrd.id}
+                        className={`rounded-2xl p-4 border flex flex-col justify-between shadow-lg transition-all ${
+                          isActive ? "bg-zinc-900/70 border-zinc-700" : "bg-zinc-900/30 border-zinc-800/60 opacity-60"
+                        }`}>
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              {isActive && <div className="h-1.5 w-1.5 rounded-full bg-[#d9ab7d] animate-pulse" />}
+                              <span className="font-black text-xs text-zinc-200">{pOrd.customer}</span>
                             </div>
-                            <div className="text-zinc-300 text-xs space-y-1 mb-3 bg-black/30 p-2.5 rounded-xl border border-zinc-900/50">
-                              {pOrd.items.map((it, idx) => (
-                                <p key={idx} className="flex justify-between font-bold text-[11px]">
-                                  <span className="text-zinc-400">• {it.name}</span>
-                                  <span className="text-zinc-500 font-mono">x{it.qty}</span>
-                                </p>
-                              ))}
-                            </div>
+                            <span className="font-mono text-[11px] font-black text-[#d9ab7d] bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-800">#{pOrd.id}</span>
                           </div>
-                          <div className="flex justify-between items-center pt-2.5 border-t border-zinc-900 text-[10px]">
-                            <span className="bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-black tracking-wider uppercase text-[9px]">
-                              {pOrd.method === "pickup" ? (lang === "ar" ? "استلام" : "Pickup") : (lang === "ar" ? "توصيل" : "Delivery")}
-                            </span>
-                            <span className={`font-black ${statusColor[currentStatus] || "text-zinc-400"}`}>
-                              {currentStatus === "Queued" && (lang === "ar" ? "في الانتظار ⏳" : "Queued ⏳")}
-                              {currentStatus === "Preparing" && (lang === "ar" ? "جاري التحضير ☕" : "Preparing ☕")}
-                              {currentStatus === "Ready" && !isDelivery && (lang === "ar" ? "جاهز للاستلام ✓" : "Ready ✓")}
-                              {currentStatus === "Ready" && isDelivery && (lang === "ar" ? "جاهز للتوصيل ✓" : "Ready for Delivery ✓")}
-                              {currentStatus === "Out for Delivery" && (lang === "ar" ? "مع الديليفري 🛵" : "Out for Delivery 🛵")}
-                              {currentStatus === "Cancelled" && (lang === "ar" ? "ملغي" : "Cancelled")}
-                              {currentStatus === "Delivered" && (lang === "ar" ? "تم التسليم ✓" : "Delivered ✓")}
-                            </span>
+                          <div className="text-zinc-300 text-xs space-y-1 mb-3 bg-black/30 p-2.5 rounded-xl border border-zinc-900/50">
+                            {pOrd.items.map((it, idx) => (
+                              <p key={idx} className="flex justify-between font-bold text-[11px]">
+                                <span className="text-zinc-400">• {it.name}</span>
+                                <span className="text-zinc-500 font-mono">x{it.qty}</span>
+                              </p>
+                            ))}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <div className="flex justify-between items-center pt-2.5 border-t border-zinc-900 text-[10px]">
+                          <span className="bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-black tracking-wider uppercase text-[9px]">
+                            {pOrd.method === "pickup" ? (lang === "ar" ? "استلام" : "Pickup") : (lang === "ar" ? "توصيل" : "Delivery")}
+                          </span>
+                          {/* ── FIX: Customer order status — shows "Out for Delivery" for delivery orders ── */}
+                          <span className={`font-black ${statusColor[currentStatus] || "text-zinc-400"}`}>
+                            {currentStatus === "Queued" && (lang === "ar" ? "في الانتظار ⏳" : "Queued ⏳")}
+                            {currentStatus === "Preparing" && (lang === "ar" ? "جاري التحضير ☕" : "Preparing ☕")}
+                            {currentStatus === "Ready" && !isDelivery && (lang === "ar" ? "جاهز للاستلام ✓" : "Ready ✓")}
+                            {currentStatus === "Ready" && isDelivery && (lang === "ar" ? "جاهز للتوصيل ✓" : "Ready for Delivery ✓")}
+                            {currentStatus === "Out for Delivery" && (lang === "ar" ? "مع الديليفري 🛵" : "Out for Delivery 🛵")}
+                            {currentStatus === "Cancelled" && (lang === "ar" ? "ملغي" : "Cancelled")}
+                            {currentStatus === "Delivered" && (lang === "ar" ? "تم التسليم ✓" : "Delivered ✓")}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           </div>

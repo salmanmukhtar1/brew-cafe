@@ -76,7 +76,7 @@ const INITIAL_MENU: MenuItem[] = [
     name: { en: "Chocolate Cake", ar: "شوكليت كيك" },
     desc: { en: "Rich and moist chocolate cake layered with intense chocolate flavor.", ar: "كيكة شوكليت غنية وناعمة بطبقات لذيذة من الشوكليت المكثفة." },
     price: 26, kcal: 687, cat: "Dessert", sold: 0,
-    img: "https://i.ibb.co/JRG2PBmt/DSC03596.jpg", inStock: true,
+    img: "https://i.ibb.co/C5h4pwWp/DSC03598.jpg", inStock: true,
   },
   {
     id: 2, badge: "Bestseller", type: "dessert",
@@ -90,7 +90,7 @@ const INITIAL_MENU: MenuItem[] = [
     name: { en: "Iced Spanish Latte", ar: "ماتشا سبانش" },
     desc: { en: "Creamy matcha blended with sweet milk in a rich Spanish latte style.", ar: "ماتشا كريمية ممزوجة بالحليب المحلى بأسلوب سبانش فاخر." },
     price: 20, kcal: 225, cat: "cold", sold: 0,
-    img: "https://i.ibb.co/C5h4pwWp/DSC03598.jpg", inStock: true,
+    img: "https://i.ibb.co/hRyLJCg1/DSC05617.jpg", inStock: true,
   },
 ];
 

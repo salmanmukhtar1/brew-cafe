@@ -94,11 +94,7 @@ const INITIAL_MENU: MenuItem[] = [
   },
 ];
 
-const BREW_GALLERY = [
-  "https://i.ibb.co/C5Nb3K6B/BREW00000.jpg",
-  "https://i.ibb.co/0yFxmCL4/download.jpg",
-  "https://i.ibb.co/7sp9dsy/de29fb533491bf53a737c1490b16d8a0.jpg",
-];
+
 
 const ORDER_STATUSES = ["Queued", "Preparing", "Ready", "Cancelled", "Delivered"];
 
@@ -153,7 +149,7 @@ const printReceipt = (order: Order, lang: string) => {
   const subtotal = order.total - vat;
   const deliveryInfo = order.method === "delivery" && order.deliveryAddress
     ? `<div class="row"><span>${lang === "ar" ? "العنوان" : "Address"}:</span><span>${order.deliveryAddress}</span></div>${order.deliveryArea ? `<div class="row"><span>${lang === "ar" ? "الحي" : "Area"}:</span><span>${order.deliveryArea}</span></div>` : ""}${order.deliveryLandmark ? `<div class="row"><span>${lang === "ar" ? "معلم قريب" : "Landmark"}:</span><span>${order.deliveryLandmark}</span></div>` : ""}` : "";
-  const html = `<!DOCTYPE html><html dir="${lang === "ar" ? "rtl" : "ltr"}"><head><meta charset="UTF-8"/><title>Receipt #${order.id}</title><style>body{font-family:monospace;font-size:12px;width:300px;margin:0 auto;padding:16px;}h2{text-align:center;font-size:16px;margin-bottom:4px;}.sub{text-align:center;font-size:10px;color:#666;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}.divider{border-top:1px dashed #000;margin:8px 0;}.row{display:flex;justify-content:space-between;padding:2px 0;}.total{font-weight:bold;font-size:14px;}.footer{text-align:center;margin-top:16px;font-size:10px;color:#888;}</style></head><body><h2>☕ Brew Café</h2><div class="sub">Madinah · VAT: 123456789 · ${date}</div><div class="divider"></div><table>${itemsHtml}</table><div class="divider"></div><div class="row"><span>${lang === "ar" ? "المجموع قبل الضريبة" : "Subtotal"}:</span><span>${subtotal.toFixed(2)} SAR</span></div><div class="row"><span>${lang === "ar" ? "ضريبة القيمة المضافة 15%" : "VAT 15%"}:</span><span>${vat.toFixed(2)} SAR</span></div><div class="divider"></div><div class="row total"><span>${lang === "ar" ? "الإجمالي" : "Total"}:</span><span>${order.total.toFixed(2)} SAR</span></div><div class="row"><span>${lang === "ar" ? "طريقة الدفع" : "Payment"}:</span><span>${order.paymentMethod}</span></div><div class="row"><span>${lang === "ar" ? "حالة الدفع" : "Payment Status"}:</span><span>${order.paymentStatus}</span></div><div class="divider"></div><div class="row"><span>${lang === "ar" ? "طريقة الاستلام" : "Method"}:</span><span>${order.method}</span></div>${deliveryInfo}${order.notes ? `<div class="row"><span>${lang === "ar" ? "ملاحظات" : "Notes"}:</span><span>${order.notes}</span></div>` : ""}<div class="footer">${lang === "ar" ? "شكراً لزيارتكم · بريو كافيه" : "Thank you for visiting · Brew Café"}</div></body></html>`;
+  const html = `<!DOCTYPE html><html dir="${lang === "ar" ? "rtl" : "ltr"}"><head><meta charset="UTF-8"/><title>Receipt #${order.id}</title><style>body{font-family:monospace;font-size:15px;width:380px;margin:0 auto;padding:20px;}h2{text-align:center;font-size:16px;margin-bottom:4px;}.sub{text-align:center;font-size:10px;color:#666;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}.divider{border-top:1px dashed #000;margin:8px 0;}.row{display:flex;justify-content:space-between;padding:2px 0;}.total{font-weight:bold;font-size:17px;}.footer{text-align:center;margin-top:16px;font-size:10px;color:#888;}</style></head><body><h2>☕ Brew Café</h2><div class="sub">Madinah · VAT: 123456789 · ${date}</div><div class="divider"></div><table>${itemsHtml}</table><div class="divider"></div><div class="row"><span>${lang === "ar" ? "المجموع قبل الضريبة" : "Subtotal"}:</span><span>${subtotal.toFixed(2)} SAR</span></div><div class="row"><span>${lang === "ar" ? "ضريبة القيمة المضافة 15%" : "VAT 15%"}:</span><span>${vat.toFixed(2)} SAR</span></div><div class="divider"></div><div class="row total"><span>${lang === "ar" ? "الإجمالي" : "Total"}:</span><span>${order.total.toFixed(2)} SAR</span></div><div class="row"><span>${lang === "ar" ? "طريقة الدفع" : "Payment"}:</span><span>${order.paymentMethod}</span></div><div class="row"><span>${lang === "ar" ? "حالة الدفع" : "Payment Status"}:</span><span>${order.paymentStatus}</span></div><div class="divider"></div><div class="row"><span>${lang === "ar" ? "طريقة الاستلام" : "Method"}:</span><span>${order.method}</span></div>${deliveryInfo}${order.notes ? `<div class="row"><span>${lang === "ar" ? "ملاحظات" : "Notes"}:</span><span>${order.notes}</span></div>` : ""}<div class="footer">${lang === "ar" ? "شكراً لزيارتكم · بريو كافيه" : "Thank you for visiting · Brew Café"}</div></body></html>`;
   const win = window.open("", "_blank", "width=400,height=600");
   if (win) { win.document.write(html); win.document.close(); win.print(); }
 };
@@ -353,6 +349,28 @@ export default function BrewCafeUltraElite() {
   const [lang, setLang] = useState("en");
   const [view, setView] = useState("customer");
   const [menuData, setMenuData] = useState<MenuItem[]>(INITIAL_MENU);
+ const brewGallery = useMemo(() => {
+  const imgs = menuData.filter(m => m.img && m.img.trim() !== "").map(m => m.img);
+  return imgs.length > 0 ? imgs : [
+    "https://i.ibb.co/C5h4pwWp/DSC03598.jpg",
+    "https://i.ibb.co/1fjCWLkp/DSC03628.jpg",
+    "https://i.ibb.co/JRG2PBmt/DSC03596.jpg",
+    "https://i.ibb.co/MyQnzrKC/DSC03641.jpg",
+    "https://i.ibb.co/1GfDjjPn/DSC05596.jpg",
+    "https://i.ibb.co/MyQnzrKC/DSC03641.jpg",
+    "https://i.ibb.co/prGWBwTB/DSC05611.jpg",
+    "https://i.ibb.co/1fkrbFvJ/DSC05573-1.jpg",
+    "https://i.ibb.co/5WqTkNMB/DSC05609.jpg",
+    "https://i.ibb.co/b5rGM5Rj/DSC05585.jpg",
+    "https://i.ibb.co/cc2nqLLJ/DSC05630.jpg",
+    "https://i.ibb.co/MDBXYPmC/DSC05632.jpg",
+    "https://i.ibb.co/pBrPfPrf/DSC05626.jpg",
+    "https://i.ibb.co/hRyLJCg1/DSC05617.jpg",
+   " https://i.ibb.co/zd84YQ1/DSC05622.jpg",
+   "https://i.ibb.co/ZpcfDWrt/DSC03612.jpg",
+
+  ];
+ }, [menuData]);
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -424,7 +442,7 @@ export default function BrewCafeUltraElite() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
 
-  useEffect(() => { const t = setInterval(() => setHeroIndex(p => (p + 1) % BREW_GALLERY.length), 4000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setHeroIndex(p => (p + 1) % brewGallery.length), 4000); return () => clearInterval(t); }, [brewGallery.length]);
 
   useEffect(() => {
     const systemClock = setInterval(() => setCurrentTime(new Date()), 30000);
@@ -466,7 +484,7 @@ export default function BrewCafeUltraElite() {
     initializeAppEngine();
     const liveStreamChannel = supabase.channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'brew_cafe_orders' }, payload => {
-        if (payload.eventType === 'INSERT') { setOrders(prev => prev.some(o => o.id === (payload.new as Order).id) ? prev : [payload.new as Order, ...prev]); if (view === "staff") playOrderPing(); }
+        if (payload.eventType === 'INSERT') { setOrders(prev => prev.some(o => o.id === (payload.new as Order).id) ? prev : [payload.new as Order, ...prev]); playOrderPing(); }
         else if (payload.eventType === 'UPDATE') setOrders(prev => prev.map(o => o.id === payload.new.id ? (payload.new as Order) : o));
         else if (payload.eventType === 'DELETE') setOrders(prev => prev.filter(o => o.id !== (payload.old as Order).id));
       }).subscribe();
@@ -708,7 +726,7 @@ export default function BrewCafeUltraElite() {
         /* Remove 300ms tap delay on all touch devices */
         touchAction: "manipulation",
       }}
-      className={`min-h-screen w-full text-white overflow-x-hidden bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
+      className={`min-h-screen w-full text-white overflow-x-hidden bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] transform-gpu ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
     >
       {/* ── TOAST NOTIFICATIONS ── */}
       <div className="fixed bottom-5 left-5 z-[9999] flex flex-col gap-2 max-w-[calc(100vw-2.5rem)] w-full sm:max-w-sm pointer-events-none">
@@ -809,17 +827,17 @@ export default function BrewCafeUltraElite() {
         {/* CUSTOMER VIEW */}
         {view === "customer" && (
           <motion.main key="customer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto">
+            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto will-change-auto">
             {/* HERO */}
             <div className="relative h-[55vh] sm:h-[65vh] overflow-hidden mb-0">
-              {BREW_GALLERY.map((img, idx) => (
+              {brewGallery.map((img, idx) => (
                 <motion.div key={idx} initial={{ opacity: 0 }} animate={{ opacity: idx === heroIndex ? 1 : 0 }} transition={{ duration: 1.2, ease: "easeInOut" }} className="absolute inset-0">
                   <img src={img} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
                 </motion.div>
               ))}
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                {BREW_GALLERY.map((_, idx) => (<button key={idx} type="button" onClick={() => setHeroIndex(idx)} className={`rounded-full transition-all duration-500 ${idx === heroIndex ? "w-6 h-2 bg-[#d9ab7d]" : "w-2 h-2 bg-white/30"}`} />))}
+                {brewGallery.map((_, idx) => (<button key={idx} type="button" onClick={() => setHeroIndex(idx)} className={`rounded-full transition-all duration-500 ${idx === heroIndex ? "w-6 h-2 bg-[#d9ab7d]" : "w-2 h-2 bg-white/30"}`} />))}
               </div>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
                 <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-[9px] sm:text-[10px] tracking-[0.35em] uppercase text-zinc-400 mb-3 font-bold">{lang === "ar" ? "قهوة مختصة فاخرة · تجربة استثنائية" : "Specialty Coffee Roasters · Madinah"}</motion.p>
@@ -888,10 +906,10 @@ export default function BrewCafeUltraElite() {
 
               {/* CATEGORY TABS */}
               <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-none">
-                {["all", "hot", "cold", "dessert"].map(cat => (
+                {["all", "hot", "cold", "dessert", "breakfast"].map(cat => (
                   <button key={cat} type="button" onClick={() => setActiveCategory(cat)}
                     className={`h-11 px-5 rounded-xl text-xs uppercase tracking-widest font-black transition-all border cursor-pointer select-none flex-shrink-0 ${activeCategory === cat ? "bg-[#800020] border-[#800020] text-white shadow-lg shadow-[#800020]/20" : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}>
-                    {lang === "ar" ? (cat === "all" ? "الكل" : cat === "hot" ? "ساخن" : cat === "cold" ? "بارد" : "الحلويات") : cat}
+                    {lang === "ar" ? (cat === "all" ? "الكل" : cat === "hot" ? "ساخن" : cat === "cold" ? "بارد" : cat === "dessert" ? "الحلويات" : "الإفطار") : cat}
                   </button>
                 ))}
               </div>
@@ -1286,6 +1304,7 @@ export default function BrewCafeUltraElite() {
                                   <option value="hot">{lang === "ar" ? "ساخن" : "Hot"}</option>
                                   <option value="cold">{lang === "ar" ? "بارد" : "Cold"}</option>
                                   <option value="dessert">{lang === "ar" ? "حلويات" : "Dessert"}</option>
+                                  <option value="breakfast">{lang === "ar" ? "الإفطار" : "Breakfast"}</option>
                                 </select>
                               </div>
                             </div>

@@ -76,21 +76,21 @@ const INITIAL_MENU: MenuItem[] = [
     name: { en: "Chocolate Cake", ar: "شوكليت كيك" },
     desc: { en: "Rich and moist chocolate cake layered with intense chocolate flavor.", ar: "كيكة شوكليت غنية وناعمة بطبقات لذيذة من الشوكليت المكثفة." },
     price: 26, kcal: 687, cat: "Dessert", sold: 0,
-    img: "https://i.ibb.co/C5Nb3K6B/BREW00000.jpg", inStock: true,
+    img: "https://i.ibb.co/JRG2PBmt/DSC03596.jpg", inStock: true,
   },
   {
     id: 2, badge: "Bestseller", type: "dessert",
     name: { en: "Brownie", ar: "براونيه" },
     desc: { en: "Dense chocolate brownie with a soft fudgy center.", ar: "براوني شوكليت كثيف بقوام طري من الداخل." },
     price: 9, kcal: 150, cat: "Dessert", sold: 0,
-    img: "https://i.ibb.co/0yFxmCL4/download.jpg", inStock: true,
+    img: "https://i.ibb.co/1fjCWLkp/DSC03628.jpg", inStock: true,
   },
   {
     id: 3, badge: "New", type: "Cold",
     name: { en: "Iced Spanish Latte", ar: "ماتشا سبانش" },
     desc: { en: "Creamy matcha blended with sweet milk in a rich Spanish latte style.", ar: "ماتشا كريمية ممزوجة بالحليب المحلى بأسلوب سبانش فاخر." },
     price: 20, kcal: 225, cat: "cold", sold: 0,
-    img: "https://i.ibb.co/7sp9dsy/de29fb533491bf53a737c1490b16d8a0.jpg", inStock: true,
+    img: "https://i.ibb.co/C5h4pwWp/DSC03598.jpg", inStock: true,
   },
 ];
 
@@ -662,7 +662,7 @@ export default function BrewCafeUltraElite() {
 
   const deployProductListing = async (e: React.FormEvent) => {
     e.preventDefault(); if (!validateNewListing()) return; setIsSyncing(true);
-    const newItem = { badge: newListing.badge || "New", type: newListing.cat === "dessert" ? "Dessert" : newListing.cat === "cold" ? "Cold" : "Hot", name: { en: newListing.nameEn.trim(), ar: newListing.nameAr.trim() }, desc: { en: newListing.descEn.trim() || "Artisanal Brew selection.", ar: newListing.descAr.trim() || "خيارات بريو الفاخرة." }, price: parseFloat(newListing.price), kcal: parseInt(newListing.kcal) || 0, cat: newListing.cat, sold: 0, img: newListing.imgUrl?.trim() || "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1400&auto=format&fit=crop", inStock: true };
+    const newItem = { badge: newListing.badge || "New", type: newListing.cat === "dessert" ? "Dessert" : newListing.cat === "cold" ? "Cold" : "Hot", name: { en: newListing.nameEn.trim(), ar: newListing.nameAr.trim() }, desc: { en: newListing.descEn.trim() || "Artisanal Brew selection.", ar: newListing.descAr.trim() || "خيارات بريو الفاخرة." }, price: parseFloat(newListing.price), kcal: parseInt(newListing.kcal) || 0, cat: newListing.cat, sold: 0, img: newListing.imgUrl?.trim() || "https://i.ibb.co/MyQnzrKC/DSC03641.jpg", inStock: true };
     const { data: insertedItem, error } = await supabase.from('brew_cafe_menu').insert([newItem]).select().single();
     if (!error && insertedItem) { setMenuData(prev => [...prev, insertedItem as MenuItem]); setIsDeployModalOpen(false); setNewListing({ nameEn: "", nameAr: "", descEn: "", descAr: "", price: "", kcal: "", cat: "hot", badge: "New", imgUrl: "" }); setListingErrors({}); showToast("Product deployed successfully!", "success", "deploy-ok"); }
     else showToast(error?.message?.includes("policy") || error?.code === "42501" ? "Failed: Supabase RLS blocks insert on brew_cafe_menu. Add anon INSERT policy." : "Failed to add product.", "error", "deploy-fail");

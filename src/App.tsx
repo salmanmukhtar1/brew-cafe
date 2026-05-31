@@ -720,13 +720,12 @@ export default function BrewCafeUltraElite() {
     <div
       dir={lang === "ar" ? "rtl" : "ltr"}
       style={{
-        fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "'Inter', sans-serif",
-        /* iOS Safari: prevent font size inflation on rotate */
-        WebkitTextSizeAdjust: "100%",
-        /* Remove 300ms tap delay on all touch devices */
-        touchAction: "manipulation",
-      }}
-      className={`min-h-screen w-full text-white overflow-x-hidden bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] transform-gpu ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
+  fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "'Inter', sans-serif",
+  WebkitTextSizeAdjust: "100%",
+  touchAction: "manipulation",
+  backgroundColor: "#040209",
+}}
+      className={`min-h-screen w-full text-white overflow-x-hidden bg-gradient-to-br transition-all duration-[3000ms] selection:bg-[#800020] ${activeEvent ? activeEvent.color : COLORS[bgIndex]}`}
     >
       {/* ── TOAST NOTIFICATIONS ── */}
       <div className="fixed bottom-5 left-5 z-[9999] flex flex-col gap-2 max-w-[calc(100vw-2.5rem)] w-full sm:max-w-sm pointer-events-none">
@@ -778,48 +777,102 @@ export default function BrewCafeUltraElite() {
       </AnimatePresence>
 
       {/* ── TOP NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-[200] px-3 sm:px-6 lg:px-8 py-3 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-2">
-          <div onClick={() => { switchView("customer"); setIsSuperAdminVerified(false); }} className="cursor-pointer select-none group flex-shrink-0">
-            <div className="flex items-center gap-1.5" dir="ltr">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tighter group-hover:text-[#d9ab7d] transition-colors leading-none">Brew Café</h1>
-              {activeEvent && <span className="text-base inline-block select-none">{activeEvent.sticker}</span>}
-            </div>
-            <p className="text-[8px] sm:text-[9px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-zinc-500 font-bold truncate max-w-[140px] sm:max-w-none">{lang === "ar" ? "بريو كافيه · المدينة المنورة" : "Brew Café · Madinah"}</p>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {view !== "customer" && (
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-zinc-900/90 border border-zinc-800 text-[9px] font-black tracking-wider uppercase text-zinc-400">
-                {isSyncing ? <RefreshCw size={10} className="text-[#d9ab7d] animate-spin" /> : <Wifi size={10} className="text-emerald-400" />}
-                <span className="font-mono text-[8px]">{isSyncing ? (lang === "ar" ? "مزامنة" : "SYNC") : dbStatus === "Connected Successfully!" ? (lang === "ar" ? "متصل" : "LIVE") : (lang === "ar" ? "خطأ" : "ERR")}</span>
-              </div>
-            )}
-            <button type="button" onClick={() => setTimerPopup(true)} className="h-9 px-2.5 sm:px-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 text-xs text-zinc-300 hover:bg-[#800020] hover:text-white transition-all">
-              <Timer size={12} className="text-[#d9ab7d] flex-shrink-0" />
-              <span className="font-mono font-bold tracking-wider text-[11px] sm:text-xs">{currentTime.toLocaleTimeString(lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-            </button>
-            <div onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="h-9 w-16 sm:w-20 rounded-full bg-zinc-900 border border-zinc-800 relative cursor-pointer flex items-center justify-between px-1.5 sm:px-2 text-[9px] sm:text-[10px] font-black tracking-widest select-none flex-shrink-0">
-              <span className={`z-10 transition-all duration-300 ${lang === "en" ? "text-black font-black" : "text-zinc-500"}`}>EN</span>
-              <span className={`z-10 transition-all duration-300 ${lang === "ar" ? "text-black font-black" : "text-zinc-500"}`}>AR</span>
-              <motion.div layout transition={{ type: "spring", stiffness: 400, damping: 30 }} className={`absolute top-1 bottom-1 w-7 sm:w-8 rounded-full bg-[#d9ab7d] ${lang === "en" ? "left-1" : "left-8 sm:left-10"}`} />
-            </div>
-            {view === "customer" && (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {pastOrders.length > 0 && (
-                  <button type="button" onClick={() => setIsNotificationOpen(true)} className="relative h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
-                    <BellRing size={14} className="text-[#d9ab7d]" />
-                    {activeCustomerOrders.length > 0 && <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-white text-black text-[8px] font-black flex items-center justify-center shadow-lg animate-pulse">{activeCustomerOrders.length}</span>}
-                  </button>
-                )}
-                <button type="button" onClick={() => setIsCartOpen(true)} className="relative h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all">
-                  <ShoppingBag size={14} />
-                  {cart.length > 0 && <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-white text-black text-[8px] font-black flex items-center justify-center shadow-lg">{cart.reduce((a, b) => a + b.qty, 0)}</span>}
-                </button>
-              </div>
-            )}
-          </div>
+      <nav className="fixed top-0 left-0 right-0 z-[9999] px-3 sm:px-5 py-3 border-b border-white/5 bg-zinc-950/90 backdrop-blur-xl">
+   <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-1">
+
+    {/* LEFT — Logo */}
+    <div
+      onClick={() => { switchView("customer"); setIsSuperAdminVerified(false); }}
+      className="cursor-pointer select-none group flex-shrink-0 min-w-0"
+    >
+      <div className="flex items-center gap-1" dir="ltr">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tighter group-hover:text-[#d9ab7d] transition-colors leading-none whitespace-nowrap">
+          Brew Café
+        </h1>
+        {activeEvent && (
+          <span className="text-sm inline-block select-none">{activeEvent.sticker}</span>
+        )}
+      </div>
+      <p className="text-[8px] sm:text-[9px] tracking-[0.2em] uppercase text-zinc-500 font-bold truncate">
+        {lang === "ar" ? "بريو كافيه · المدينة المنورة" : "BREW CAFÉ · MADINAH"}
+      </p>
+    </div>
+
+    {/* RIGHT — Controls */}
+    <div className="flex items-center gap-1 flex-shrink-0">
+
+      {/* DB status — only on large screens in staff/owner views */}
+      {view !== "customer" && (
+        <div className="hidden lg:flex items-center gap-1 px-2 h-8 rounded-lg bg-zinc-900/90 border border-zinc-800 text-[9px] font-black tracking-wider uppercase text-zinc-400">
+          {isSyncing
+            ? <RefreshCw size={9} className="text-[#d9ab7d] animate-spin" />
+            : <Wifi size={9} className="text-emerald-400" />}
+          <span className="font-mono text-[8px]">
+            {isSyncing ? "SYNC" : dbStatus === "Connected Successfully!" ? "LIVE" : "ERR"}
+          </span>
         </div>
-      </nav>
+      )}
+
+      {/* Clock — hidden on very small screens */}
+      <button
+        type="button"
+        onClick={() => setTimerPopup(true)}
+        className="flex h-8 px-2 rounded-lg bg-white/5 border border-white/10 items-center gap-1 text-zinc-300 hover:bg-[#800020] hover:text-white transition-all"
+      >
+        <Timer size={11} className="text-[#d9ab7d] flex-shrink-0" />
+        <span className="font-mono font-bold text-[10px]">
+          {currentTime.toLocaleTimeString(lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </button>
+
+      {/* Lang toggle */}
+      <div
+        onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+        className="h-8 w-[52px] rounded-full bg-zinc-900 border border-zinc-800 relative cursor-pointer flex items-center justify-between px-1.5 text-[9px] font-black tracking-widest select-none flex-shrink-0"
+      >
+        <span className={`z-10 transition-all duration-300 text-[9px] ${lang === "en" ? "text-black font-black" : "text-zinc-500"}`}>EN</span>
+        <span className={`z-10 transition-all duration-300 text-[9px] ${lang === "ar" ? "text-black font-black" : "text-zinc-500"}`}>AR</span>
+        <motion.div
+          layout
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className={`absolute top-1 bottom-1 w-[22px] rounded-full bg-[#d9ab7d] ${lang === "en" ? "left-1" : "left-[26px]"}`}
+        />
+      </div>
+
+      {/* Customer-only icons */}
+      {view === "customer" && (
+        <>
+          {pastOrders.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsNotificationOpen(true)}
+              className="relative h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all flex-shrink-0"
+            >
+              <BellRing size={14} className="text-[#d9ab7d]" />
+              {activeCustomerOrders.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 rounded-full bg-white text-black text-[8px] font-black flex items-center justify-center shadow-lg animate-pulse">
+                  {activeCustomerOrders.length}
+                </span>
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsCartOpen(prev => !prev)}
+            className="relative h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#800020] hover:text-white transition-all flex-shrink-0"
+          >
+            <ShoppingBag size={14} />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 rounded-full bg-[#d9ab7d] text-black text-[8px] font-black flex items-center justify-center shadow-lg">
+                {cart.reduce((a, b) => a + b.qty, 0)}
+              </span>
+            )}
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+</nav>
 
       {/* ── VIEWS ── */}
       <AnimatePresence mode="wait">
@@ -967,7 +1020,7 @@ export default function BrewCafeUltraElite() {
                 </button>
                 {isPinRecoveryOpen && (
                   <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-2 p-3 bg-black/40 rounded-lg border border-zinc-800 text-[10px] text-zinc-400 leading-relaxed">
-                    {lang === "ar" ? "الرمز الافتراضي هو 1234. يمكن تغييره من لوحة تحكم المالك." : "The default PIN is 1234. You can change it from the Owner Dashboard."}
+                    {lang === "ar" ? "من فضلك كلم المالك او الإدارة" : "The default PIN is 1234. You can change it from the Owner Dashboard."}
                   </motion.div>
                 )}
               </div>
@@ -1568,97 +1621,194 @@ export default function BrewCafeUltraElite() {
       <AnimatePresence>
         {isCartOpen && (
           <div className="fixed inset-0 flex justify-end" style={{ zIndex: 8000 }}>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCartOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md h-full bg-zinc-950 flex flex-col p-5 shadow-2xl ltr:border-l rtl:border-r border-zinc-800 overflow-y-auto" style={{ zIndex: 8001 }}>
-              <div className="flex justify-between items-center mb-5 flex-shrink-0">
-                <div className="flex items-center gap-2"><ShoppingBag size={17} className="text-[#d9ab7d]" /><h3 className="font-black text-base text-white uppercase tracking-wider">{lang === "ar" ? "حقيبتك" : "Your Bag"}</h3></div>
-                <button type="button" onClick={() => setIsCartOpen(false)} className="h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer"><X size={14} /></button>
-              </div>
-              {cart.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingBag size={44} className="mx-auto mb-3 text-zinc-800" />
-                  <p className="text-xs text-zinc-500 font-medium">{lang === "ar" ? "حقيبتك فارغة" : "Your bag is empty."}</p>
-                  <p className="text-[10px] text-zinc-600 mt-1">{lang === "ar" ? "أضف منتجاً من القائمة" : "Add items from the menu to get started."}</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3 max-h-[28vh] overflow-y-auto pr-1 flex-shrink-0">
-                    {cart.map(item => (
-                      <div key={item.id} className="flex gap-3 bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-900">
-                        {item.img && <img src={item.img} className="w-11 h-11 rounded-lg object-cover flex-shrink-0" alt="" />}
-                        <div className="flex-1 text-xs min-w-0">
-                          <div className="flex justify-between items-start gap-1">
-                            <h4 className="font-black text-white truncate">{item.name[lang as keyof LocalizedString]}</h4>
-                            <button type="button" onClick={() => deleteFromCart(item.id)} className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"><Trash2 size={12} /></button>
-                          </div>
-                          <p className="text-[#d9ab7d] font-mono mt-0.5 font-bold text-[11px]">{item.price} SAR</p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <button type="button" onClick={() => updateQty(item.id, -1)} className="h-6 w-6 rounded bg-zinc-800 text-white flex items-center justify-center hover:bg-zinc-700 transition-colors active:scale-90"><Minus size={11} /></button>
-                            <span className="font-mono font-bold px-1 text-zinc-200 text-xs">{item.qty}</span>
-                            <button type="button" onClick={() => updateQty(item.id, 1)} className="h-6 w-6 rounded bg-zinc-800 text-white flex items-center justify-center hover:bg-zinc-700 transition-colors active:scale-90"><Plus size={11} /></button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-zinc-900 space-y-3 flex-shrink-0">
-                    <h4 className="text-[10px] uppercase font-black tracking-wider text-zinc-400">{lang === "ar" ? "بيانات الطلب" : "Order Details"}</h4>
-                    <div>
-                      <input type="text" required placeholder={lang === "ar" ? "الاسم الكريم *" : "Your Name *"} value={customerInfo.name} onChange={e => { setCustomerInfo({ ...customerInfo, name: e.target.value }); setCartErrors(p => ({ ...p, name: "" })); }} className={`w-full h-9 px-3 bg-black border rounded-lg text-xs text-white outline-none ${cartErrors.name ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
-                      {cartErrors.name && <p className="text-red-400 text-[10px] mt-1">{cartErrors.name}</p>}
-                    </div>
-                    <div>
-                      <input type="tel" required placeholder={lang === "ar" ? "رقم الجوال *" : "Phone Number *"} value={customerInfo.phone} onChange={e => { setCustomerInfo({ ...customerInfo, phone: e.target.value }); setCartErrors(p => ({ ...p, phone: "" })); }} className={`w-full h-9 px-3 bg-black border rounded-lg text-xs text-white outline-none ${cartErrors.phone ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
-                      {cartErrors.phone && <p className="text-red-400 text-[10px] mt-1">{cartErrors.phone}</p>}
-                    </div>
-                    <select value={customerInfo.method} onChange={e => setCustomerInfo({ ...customerInfo, method: e.target.value as "pickup" | "delivery" })} className="w-full h-9 px-2 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-[#800020]">
-                      <option value="pickup">{lang === "ar" ? "استلام من الفرع" : "Pickup from Store"}</option>
-                      <option value="delivery">{lang === "ar" ? "توصيل للعنوان" : "Home Delivery"}</option>
-                    </select>
-                    <AnimatePresence>
-                      {customerInfo.method === "delivery" && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                          <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-800/30">
-                            <div className="flex items-center gap-1.5 mb-2"><Navigation size={11} className="text-blue-400" /><p className="text-[10px] font-black text-blue-400 uppercase tracking-wider">{lang === "ar" ? "تفاصيل عنوان التوصيل" : "Delivery Address"}</p></div>
-                            <div className="space-y-2">
-                              <div>
-                                <input type="text" required placeholder={lang === "ar" ? "الشارع ورقم المبنى *" : "Street & building number *"} value={customerInfo.deliveryAddress} onChange={e => { setCustomerInfo({ ...customerInfo, deliveryAddress: e.target.value }); setCartErrors(p => ({ ...p, deliveryAddress: "" })); }} className={`w-full h-9 px-3 bg-black border rounded-lg text-xs text-white outline-none ${cartErrors.deliveryAddress ? "border-red-600" : "border-zinc-800 focus:border-blue-600"}`} />
-                                {cartErrors.deliveryAddress && <p className="text-red-400 text-[10px] mt-1">{cartErrors.deliveryAddress}</p>}
-                              </div>
-                              <input type="text" placeholder={lang === "ar" ? "الحي (اختياري)" : "Neighbourhood / District (optional)"} value={customerInfo.deliveryArea} onChange={e => setCustomerInfo({ ...customerInfo, deliveryArea: e.target.value })} className="w-full h-9 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-blue-600" />
-                              <input type="text" placeholder={lang === "ar" ? "معلم قريب (اختياري)" : "Nearby landmark (optional)"} value={customerInfo.deliveryLandmark} onChange={e => setCustomerInfo({ ...customerInfo, deliveryLandmark: e.target.value })} className="w-full h-9 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-blue-600" />
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <input type="text" maxLength={200} placeholder={lang === "ar" ? "ملاحظات خاصة (اختياري)" : "Special notes (optional)"} value={customerInfo.notes} onChange={e => setCustomerInfo({ ...customerInfo, notes: e.target.value })} className="w-full h-9 px-3 bg-black border border-zinc-800 rounded-lg text-xs text-white outline-none focus:border-[#800020]" />
-                    <div>
-                      <p className="text-[10px] uppercase font-black tracking-wider text-zinc-400 mb-2">{lang === "ar" ? "طريقة الدفع" : "Payment Method"}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: "cash" })} className={`h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-black uppercase border transition-all cursor-pointer active:scale-95 ${customerInfo.paymentMethod === "cash" ? "bg-[#800020] border-[#800020] text-white shadow-lg" : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600"}`}><Banknote size={15} /><span>{lang === "ar" ? "كاش" : "Cash"}</span></button>
-                        <button type="button" onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: "online" })} className={`h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-black uppercase border transition-all cursor-pointer active:scale-95 ${customerInfo.paymentMethod === "online" ? "bg-[#800020] border-[#800020] text-white shadow-lg" : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600"}`}><Smartphone size={15} /><span>{lang === "ar" ? "موبايل" : "Mobile Pay"}</span></button>
-                      </div>
-                      {customerInfo.paymentMethod === "online" && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-emerald-400 mt-1.5 font-bold">{lang === "ar" ? "✓ سيتم فتح واتساب لإتمام عملية الدفع" : "✓ WhatsApp will open to complete payment"}</motion.p>}
-                    </div>
-                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-900 text-xs font-medium space-y-1 font-mono">
-                      <div className="flex justify-between text-zinc-500"><span>{lang === "ar" ? "المجموع قبل الضريبة:" : "Subtotal:"}</span><span>{subtotal.toFixed(2)} SAR</span></div>
-                      <div className="flex justify-between text-zinc-500"><span>{lang === "ar" ? "ضريبة القيمة المضافة (15%):" : "VAT (15%):"}</span><span>{vat.toFixed(2)} SAR</span></div>
-                      <div className="flex justify-between text-white font-black pt-1.5 border-t border-zinc-800/80 text-sm"><span className="text-zinc-200 font-sans">{lang === "ar" ? "الإجمالي:" : "Total:"}</span><span className="text-[#d9ab7d]">{total.toFixed(2)} SAR</span></div>
-                    </div>
-                    <button type="button" onClick={placeOrder} disabled={isOrderSending}
-                      className="w-full h-12 rounded-xl bg-gradient-to-r from-[#800020] to-[#b00020] text-white font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 active:scale-[0.98]">
-                      <Zap size={14} />
-                      <span>{isOrderSending ? (lang === "ar" ? "جاري إرسال الطلب..." : "Sending Order...") : customerInfo.paymentMethod === "online" ? (lang === "ar" ? "تأكيد وفتح واتساب" : "Confirm & Open WhatsApp") : (lang === "ar" ? "تأكيد الطلب" : "Place Order")}</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </div>
+  {/* Backdrop */}
+  <motion.div
+    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    onClick={() => setIsCartOpen(false)}
+    className="absolute inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+  />
+
+  {/* Drawer panel */}
+  <motion.div
+    initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    className="relative w-full max-w-md h-full flex flex-col bg-zinc-950 ltr:border-l rtl:border-r border-zinc-800 shadow-2xl"
+    style={{ zIndex: 8001 }}
+  >
+    {/* ── HEADER — sticky, never scrolls ── */}
+    <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950">
+      <div className="flex items-center gap-2">
+        <ShoppingBag size={17} className="text-[#d9ab7d]" />
+        <h3 className="font-black text-base text-white uppercase tracking-wider">
+          {lang === "ar" ? "حقيبتك" : "Your Bag"}
+        </h3>
+        {cart.length > 0 && (
+          <span className="h-5 px-2 rounded-full bg-[#800020] text-white text-[10px] font-black flex items-center">
+            {cart.reduce((a, b) => a + b.qty, 0)}
+          </span>
         )}
-      </AnimatePresence>
+      </div>
+      {/* ← BACK / CLOSE BUTTON */}
+      <button
+        type="button"
+        onClick={() => setIsCartOpen(false)}
+        className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-xs font-black hover:bg-zinc-700 active:scale-95 transition-all cursor-pointer"
+      >
+        <ChevronLeft size={16} />
+        {lang === "ar" ? "رجوع" : "Back"}
+      </button>
+    </div>
+
+    {/* ── SCROLLABLE CONTENT ── */}
+    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+      {cart.length === 0 ? (
+        <div className="text-center py-16">
+          <ShoppingBag size={44} className="mx-auto mb-3 text-zinc-800" />
+          <p className="text-xs text-zinc-500 font-medium">
+            {lang === "ar" ? "حقيبتك فارغة" : "Your bag is empty."}
+          </p>
+          <p className="text-[10px] text-zinc-600 mt-1">
+            {lang === "ar" ? "أضف منتجاً من القائمة" : "Add items from the menu to get started."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Cart items */}
+          {cart.map(item => (
+            <div key={item.id} className="flex gap-3 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800">
+              {item.img && <img src={item.img} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" alt="" />}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <h4 className="font-black text-sm text-white leading-tight">{item.name[lang as keyof LocalizedString]}</h4>
+                  <button type="button" onClick={() => deleteFromCart(item.id)}
+                    className="h-7 w-7 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-800 flex items-center justify-center flex-shrink-0 transition-all">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+                <p className="text-[#d9ab7d] font-mono font-bold text-sm mt-0.5">{item.price} SAR</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <button type="button" onClick={() => updateQty(item.id, -1)}
+                    className="h-8 w-8 rounded-lg bg-zinc-800 text-white flex items-center justify-center hover:bg-zinc-700 active:scale-90 transition-all">
+                    <Minus size={13} />
+                  </button>
+                  <span className="font-mono font-black text-white text-sm w-6 text-center">{item.qty}</span>
+                  <button type="button" onClick={() => updateQty(item.id, 1)}
+                    className="h-8 w-8 rounded-lg bg-zinc-800 text-white flex items-center justify-center hover:bg-zinc-700 active:scale-90 transition-all">
+                    <Plus size={13} />
+                  </button>
+                  <span className="text-zinc-400 text-xs font-mono ml-auto">{(item.price * item.qty).toFixed(2)} SAR</span>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Order form */}
+          <div className="space-y-3 pt-2 border-t border-zinc-800">
+            <h4 className="text-[10px] uppercase font-black tracking-wider text-zinc-400">
+              {lang === "ar" ? "بيانات الطلب" : "Order Details"}
+            </h4>
+            <div>
+              <input type="text" required
+                placeholder={lang === "ar" ? "الاسم الكريم *" : "Your Name *"}
+                value={customerInfo.name}
+                onChange={e => { setCustomerInfo({ ...customerInfo, name: e.target.value }); setCartErrors(p => ({ ...p, name: "" })); }}
+                className={`w-full h-11 px-4 bg-black border rounded-xl text-sm text-white outline-none ${cartErrors.name ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
+              {cartErrors.name && <p className="text-red-400 text-[10px] mt-1">{cartErrors.name}</p>}
+            </div>
+            <div>
+              <input type="tel" required
+                placeholder={lang === "ar" ? "رقم الجوال *" : "Phone Number *"}
+                value={customerInfo.phone}
+                onChange={e => { setCustomerInfo({ ...customerInfo, phone: e.target.value }); setCartErrors(p => ({ ...p, phone: "" })); }}
+                className={`w-full h-11 px-4 bg-black border rounded-xl text-sm text-white outline-none ${cartErrors.phone ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
+              {cartErrors.phone && <p className="text-red-400 text-[10px] mt-1">{cartErrors.phone}</p>}
+            </div>
+            <select value={customerInfo.method}
+              onChange={e => setCustomerInfo({ ...customerInfo, method: e.target.value as "pickup" | "delivery" })}
+              className="w-full h-11 px-4 bg-black border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
+              <option value="pickup">{lang === "ar" ? "استلام من الفرع" : "Pickup from Store"}</option>
+              <option value="delivery">{lang === "ar" ? "توصيل للعنوان" : "Home Delivery"}</option>
+            </select>
+            <AnimatePresence>
+              {customerInfo.method === "delivery" && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
+                  <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-800/30 space-y-2">
+                    <p className="text-[10px] font-black text-blue-400 uppercase flex items-center gap-1"><Navigation size={11} />Delivery Address</p>
+                    <div>
+                      <input type="text" required
+                        placeholder={lang === "ar" ? "الشارع ورقم المبنى *" : "Street & building number *"}
+                        value={customerInfo.deliveryAddress}
+                        onChange={e => { setCustomerInfo({ ...customerInfo, deliveryAddress: e.target.value }); setCartErrors(p => ({ ...p, deliveryAddress: "" })); }}
+                        className={`w-full h-10 px-3 bg-black border rounded-xl text-xs text-white outline-none ${cartErrors.deliveryAddress ? "border-red-600" : "border-zinc-800"}`} />
+                      {cartErrors.deliveryAddress && <p className="text-red-400 text-[10px] mt-1">{cartErrors.deliveryAddress}</p>}
+                    </div>
+                    <input type="text" placeholder={lang === "ar" ? "الحي (اختياري)" : "District (optional)"}
+                      value={customerInfo.deliveryArea}
+                      onChange={e => setCustomerInfo({ ...customerInfo, deliveryArea: e.target.value })}
+                      className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none" />
+                    <input type="text" placeholder={lang === "ar" ? "معلم قريب (اختياري)" : "Landmark (optional)"}
+                      value={customerInfo.deliveryLandmark}
+                      onChange={e => setCustomerInfo({ ...customerInfo, deliveryLandmark: e.target.value })}
+                      className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <input type="text" maxLength={200}
+              placeholder={lang === "ar" ? "ملاحظات خاصة (اختياري)" : "Special notes (optional)"}
+              value={customerInfo.notes}
+              onChange={e => setCustomerInfo({ ...customerInfo, notes: e.target.value })}
+              className="w-full h-11 px-4 bg-black border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-[#800020]" />
+
+            {/* Payment */}
+            <div>
+              <p className="text-[10px] uppercase font-black tracking-wider text-zinc-400 mb-2">
+                {lang === "ar" ? "طريقة الدفع" : "Payment Method"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: "cash" })}
+                  className={`h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-black uppercase border cursor-pointer active:scale-95 transition-all ${customerInfo.paymentMethod === "cash" ? "bg-[#800020] border-[#800020] text-white" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"}`}>
+                  <Banknote size={16} />{lang === "ar" ? "كاش" : "Cash"}
+                </button>
+                <button type="button" onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: "online" })}
+                  className={`h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-black uppercase border cursor-pointer active:scale-95 transition-all ${customerInfo.paymentMethod === "online" ? "bg-[#800020] border-[#800020] text-white" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"}`}>
+                  <Smartphone size={16} />{lang === "ar" ? "موبايل" : "Mobile Pay"}
+                </button>
+              </div>
+              {customerInfo.paymentMethod === "online" && (
+                <p className="text-[10px] text-emerald-400 mt-2 font-bold">✓ WhatsApp will open to complete payment</p>
+              )}
+            </div>
+
+            {/* Totals */}
+            <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 font-mono text-sm space-y-1.5">
+              <div className="flex justify-between text-zinc-400 text-xs"><span>Subtotal:</span><span>{subtotal.toFixed(2)} SAR</span></div>
+              <div className="flex justify-between text-zinc-400 text-xs"><span>VAT (15%):</span><span>{vat.toFixed(2)} SAR</span></div>
+              <div className="flex justify-between text-white font-black text-base pt-2 border-t border-zinc-700">
+                <span>{lang === "ar" ? "الإجمالي" : "Total"}</span>
+                <span className="text-[#d9ab7d]">{total.toFixed(2)} SAR</span>
+              </div>
+            </div>
+
+            {/* Place order */}
+            <button type="button" onClick={placeOrder} disabled={isOrderSending}
+              className="w-full h-14 rounded-xl bg-gradient-to-r from-[#800020] to-[#b00020] text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 active:scale-[0.98] transition-all">
+              <Zap size={16} />
+              {isOrderSending
+                ? (lang === "ar" ? "جاري الإرسال..." : "Sending...")
+                : customerInfo.paymentMethod === "online"
+                  ? (lang === "ar" ? "تأكيد وفتح واتساب" : "Confirm & Open WhatsApp")
+                  : (lang === "ar" ? "تأكيد الطلب" : "Place Order")}
+                </button>
+              </div>
+           </>
+         )}
+        </div>{/* end scrollable */}
+       </motion.div>
+      </div>
+    )}
+   </AnimatePresence>
 
       {/* ── PAST ORDERS MODAL — FIX: z-index 9000 guarantees it appears above everything ── */}
       <AnimatePresence>
@@ -1677,7 +1827,6 @@ export default function BrewCafeUltraElite() {
                   <h3 className="text-sm font-black tracking-widest uppercase text-zinc-200">{lang === "ar" ? "طلباتك" : "Your Orders"}</h3>
                   {activeCustomerOrders.length > 0 && <span className="text-[10px] bg-[#800020] text-white px-2 py-0.5 rounded-full font-black">{activeCustomerOrders.length}{lang === "ar" ? " نشط" : " active"}</span>}
                 </div>
-                <button type="button" onClick={() => setIsNotificationOpen(false)} className="h-8 w-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"><X size={14} /></button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

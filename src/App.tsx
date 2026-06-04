@@ -442,8 +442,21 @@ export default function BrewCafeUltraElite() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
 
-  useEffect(() => { const t = setInterval(() => setHeroIndex(p => (p + 1) % brewGallery.length), 4000); return () => clearInterval(t); }, [brewGallery.length]);
+useEffect(() => { const t = setInterval(() => setHeroIndex(p => (p + 1) % brewGallery.length), 4000); return () => clearInterval(t); }, [brewGallery.length]);
 
+useEffect(() => {
+  const s = document.createElement('style');
+  s.id = 'brew-ios-fixes';
+  s.textContent = 'input, select, textarea { font-size: 16px !important; } input::placeholder, textarea::placeholder { font-size: 13px; }';
+  document.head.appendChild(s);
+  return () => document.getElementById('brew-ios-fixes')?.remove();
+}, []);
+
+useEffect(() => {
+  const handlePageShow = (e: PageTransitionEvent) => { if (e.persisted) window.location.reload(); };
+  window.addEventListener('pageshow', handlePageShow);
+  return () => window.removeEventListener('pageshow', handlePageShow);
+}, []);
   useEffect(() => {
     const systemClock = setInterval(() => setCurrentTime(new Date()), 30000);
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -491,8 +504,16 @@ export default function BrewCafeUltraElite() {
     return () => { supabase.removeChannel(liveStreamChannel); };
   }, []); // eslint-disable-line
 
-  useEffect(() => { if (!isLoaded) return; try { localStorage.setItem("brew_cafe_past_orders", JSON.stringify(pastOrders.slice(0, 50))); } catch { /* incognito */ } }, [pastOrders, isLoaded]);
-  useEffect(() => { if (!isLoaded || !ownerPin) return; supabase.from('brew_cafe_settings').upsert({ key: 'owner_pin', value: ownerPin }, { onConflict: 'key' }).then(({ error }) => { if (error) console.error('PIN save error:', error); }); }, [ownerPin, isLoaded]);
+useEffect(() => { if (!isLoaded) return; try { localStorage.setItem("brew_cafe_past_orders", JSON.stringify(pastOrders.slice(0, 50))); } catch { /* incognito */ } }, [pastOrders, isLoaded]);
+
+useEffect(() => {
+  if (!isLoaded) return;
+  const poll = setInterval(async () => {
+    const { data, error } = await supabase.from('brew_cafe_orders').select('*').order('created_at', { ascending: false });
+    if (!error && data) setOrders(data as Order[]);
+  }, 7000);
+  return () => clearInterval(poll);
+}, [isLoaded]);  useEffect(() => { if (!isLoaded || !ownerPin) return; supabase.from('brew_cafe_settings').upsert({ key: 'owner_pin', value: ownerPin }, { onConflict: 'key' }).then(({ error }) => { if (error) console.error('PIN save error:', error); }); }, [ownerPin, isLoaded]);
   useEffect(() => { if (!isLoaded || !whatsappNumber) return; supabase.from('brew_cafe_settings').upsert({ key: 'whatsapp_number', value: whatsappNumber }, { onConflict: 'key' }).then(({ error }) => { if (error) console.error('WA save error:', error); }); }, [whatsappNumber, isLoaded]);
   useEffect(() => { if (!isLoaded) return; supabase.from('brew_cafe_settings').upsert({ key: 'active_event', value: activeEvent?.id || '' }, { onConflict: 'key' }).then(({ error }) => { if (error) console.error('Event save error:', error); }); }, [activeEvent, isLoaded]);
   useEffect(() => { if (!isLoaded) return; supabase.from('brew_cafe_settings').upsert({ key: 'promo_block', value: JSON.stringify(promoBlock) }, { onConflict: 'key' }).then(({ error }) => { if (error) console.error('Promo save error:', error); }); }, [promoBlock, isLoaded]);
@@ -1073,8 +1094,21 @@ export default function BrewCafeUltraElite() {
                 <p className="text-[10px] uppercase text-zinc-500 tracking-widest">{lang === "ar" ? "تحديث مباشر" : "Live Kitchen View"}</p>
                 <h2 className="text-2xl sm:text-3xl font-black">{lang === "ar" ? "شاشة المطبخ" : "Staff Dashboard"}</h2>
               </div>
-              <button type="button" onClick={() => switchView("hub")} className="h-10 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-bold hover:bg-zinc-800 cursor-pointer">{lang === "ar" ? "تغيير العرض" : "Switch View"}</button>
-            </div>
+<div className="flex gap-2">
+  <button type="button"
+    onClick={async () => {
+      setIsSyncing(true);
+      const { data } = await supabase.from('brew_cafe_orders').select('*').order('created_at', { ascending: false });
+      if (data) setOrders(data as Order[]);
+      setIsSyncing(false);
+      showToast("Orders refreshed.", "success", "manual-refresh");
+    }}
+    className="h-10 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-bold hover:bg-zinc-800 cursor-pointer flex items-center gap-1.5">
+    <RefreshCw size={13} className={isSyncing ? "animate-spin text-[#d9ab7d]" : ""} />
+    {lang === "ar" ? "تحديث" : "Refresh"}
+  </button>
+  <button type="button" onClick={() => switchView("hub")} className="h-10 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-bold hover:bg-zinc-800 cursor-pointer">{lang === "ar" ? "تغيير العرض" : "Switch View"}</button>
+</div>            </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4 text-center">
               {ORDER_STATUSES.map(st => {
                 const count = orders.filter(o => o.status === st).length;

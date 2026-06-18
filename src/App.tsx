@@ -28,16 +28,20 @@ type PaymentMethod = "cash" | "online";
 type PaymentStatus = "pending" | "paid" | "refunded";
 interface Order {
   id: number; customer: string; phone: string;
-  method: "pickup" | "delivery";
+  method: "pickup" | "delivery" | "curbside" | "dine-in";
   items: OrderItem[]; total: number; status: string;
   created_at: number; notes: string; previousStatus: string | null;
   paymentMethod: PaymentMethod; paymentStatus: PaymentStatus;
   deliveryAddress?: string; deliveryArea?: string; deliveryLandmark?: string;
+  arrivalTime?: string; carPlate?: string; tableNumber?: string;
+  arrivalTimestamp?: number;
 }
 interface CustomerInfo {
-  name: string; phone: string; method: "pickup" | "delivery"; notes: string;
-  paymentMethod: PaymentMethod;
+  name: string; phone: string;
+  method: "pickup" | "delivery" | "curbside" | "dine-in";
+  notes: string; paymentMethod: PaymentMethod;
   deliveryAddress: string; deliveryArea: string; deliveryLandmark: string;
+  arrivalTime: string; carPlate: string; tableNumber: string;
 }
 interface IslamicEvent {
   id: string; name: LocalizedString; date: string; sticker: string;
@@ -402,7 +406,10 @@ export default function BrewCafeUltraElite() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeEvent, setActiveEvent] = useState<IslamicEvent | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "" });
+  const [locationStatus, setLocationStatus] = useState<"checking" | "inside" | "outside" | "denied">("checking");
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [orderMode, setOrderMode] = useState<"pickup" | "dine-in">("pickup");
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "", arrivalTime: "", carPlate: "", tableNumber: "" });
   const [cartErrors, setCartErrors] = useState<{ name?: string; phone?: string; deliveryAddress?: string }>({});
   const [ownerTab, setOwnerTab] = useState("overview");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -416,8 +423,29 @@ export default function BrewCafeUltraElite() {
   const [listingErrors, setListingErrors] = useState<Record<string, string>>({});
   const toastCooldownRef = useRef<Map<string, number>>(new Map());
 
+  useEffect(() => {
+  if (!navigator.geolocation) {
+    setLocationStatus("denied");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      // Madinah bounding box
+      const inMadinah =
+        latitude >= 24.35 && latitude <= 24.55 &&
+        longitude >= 39.45 && longitude <= 39.75;
+      setLocationStatus(inMadinah ? "inside" : "outside");
+    },
+    () => {
+      // User denied or error
+      setLocationStatus("denied");
+    },
+    { timeout: 8000, maximumAge: 0 }
+  );
+}, []);
   const switchView = useCallback((v: string) => {
-    if (v !== "customer") { setCart([]); setCustomerInfo({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "" }); setCartErrors({}); setIsCartOpen(false); }
+    if (v !== "customer") { setCart([]); setCustomerInfo({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "", arrivalTime: "", carPlate: "", tableNumber: "" }); setCartErrors({}); setIsCartOpen(false); }
     setView(v);
   }, []);
 
@@ -601,7 +629,27 @@ useEffect(() => {
       window.open(`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
     }
     isPlacingOrderRef.current = true; setIsOrderSending(true);
-    const newOrder = { customer: customerInfo.name.trim(), phone: customerInfo.phone.trim(), method: customerInfo.method, items: cart.map(i => ({ name: i.name.en, qty: i.qty })), total, status: "Queued", created_at: Date.now(), notes: customerInfo.notes.trim().slice(0, 200), previousStatus: null, paymentMethod: customerInfo.paymentMethod, paymentStatus: customerInfo.paymentMethod === "cash" ? "pending" : "paid" as PaymentStatus, deliveryAddress: customerInfo.deliveryAddress.trim() || null, deliveryArea: customerInfo.deliveryArea.trim() || null, deliveryLandmark: customerInfo.deliveryLandmark.trim() || null };
+const newOrder = {
+  customer: customerInfo.name.trim(),
+  phone: customerInfo.phone.trim(),
+  method: customerInfo.method,
+  items: cart.map(i => ({ name: i.name.en, qty: i.qty })),
+  total,
+  status: "Queued",
+  created_at: Date.now(),
+  notes: customerInfo.notes.trim().slice(0, 200),
+  previousStatus: null,
+  paymentMethod: customerInfo.paymentMethod,
+  paymentStatus: customerInfo.paymentMethod === "cash" ? "pending" : "paid" as PaymentStatus,
+  deliveryAddress: null,
+  deliveryArea: null,
+  deliveryLandmark: null,
+  arrivalTime: customerInfo.arrivalTime || null,
+  carPlate: customerInfo.carPlate?.trim().toUpperCase() || null,
+  tableNumber: customerInfo.tableNumber?.trim() || null,
+  arrivalTimestamp: customerInfo.arrivalTime ? Date.now() + parseInt(customerInfo.arrivalTime) * 60000 : null,
+};
+    
     try {
       const { data: insertedData, error } = await supabase.from('brew_cafe_orders').insert([newOrder]).select().single();
       if (!error && insertedData) {
@@ -617,7 +665,7 @@ useEffect(() => {
           window.open(`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
         }
         showToast(`Order #${savedOrder.id} placed successfully!`, "success", "order-placed");
-        setCart([]); setCustomerInfo({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "" }); setCartErrors({}); setIsCartOpen(false);
+        setCart([]); setCustomerInfo({ name: "", phone: "", method: "pickup", notes: "", paymentMethod: "cash", deliveryAddress: "", deliveryArea: "", deliveryLandmark: "", arrivalTime: "", carPlate: "", tableNumber: "" }); setCartErrors({}); setIsCartOpen(false);
       } else showToast(error?.message?.includes("policy") || error?.code === "42501" ? "Order failed: Supabase RLS blocks inserts. Enable anon insert on brew_cafe_orders." : "Failed to place order. Please check your connection.", "error", "order-fail");
     } catch { showToast("An unexpected error occurred. Please try again.", "error", "order-error"); }
     finally { setIsOrderSending(false); isPlacingOrderRef.current = false; }
@@ -899,9 +947,70 @@ useEffect(() => {
 
         {/* CUSTOMER VIEW */}
         {view === "customer" && (
-          <motion.main key="customer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto will-change-auto">
-            {/* HERO */}
+<motion.main key="customer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+  className="relative z-10 pt-20 pb-24 overflow-x-hidden w-full max-w-[1600px] mx-auto will-change-auto">
+
+  {/* ── LOCATION GATE ── */}
+  {locationStatus === "checking" && (
+    <div className="fixed inset-0 z-[9999] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        className="w-14 h-14 rounded-full border-4 border-zinc-800 border-t-[#d9ab7d] mb-6" />
+      <h2 className="text-xl font-black text-white mb-2">
+        {lang === "ar" ? "جاري تحديد موقعك..." : "Detecting your location..."}
+      </h2>
+      <p className="text-xs text-zinc-500">
+        {lang === "ar" ? "يرجى السماح بالوصول إلى موقعك" : "Please allow location access when prompted"}
+      </p>
+    </div>
+  )}
+
+  {locationStatus === "outside" && (
+    <div className="fixed inset-0 z-[9998] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-24 h-24 rounded-3xl bg-red-950/40 border border-red-800/40 flex items-center justify-center text-5xl mb-6 shadow-2xl shadow-red-950/50">🚫</div>
+      <p className="text-[10px] uppercase tracking-[0.3em] text-red-400 font-black mb-3">Outside Service Area</p>
+      <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
+        {lang === "ar" ? "خارج نطاق الخدمة" : "Not Available Here"}
+      </h2>
+      <p className="text-sm text-zinc-400 leading-relaxed max-w-xs mb-8">
+        {lang === "ar"
+          ? "خدمة بريو كافيه متاحة داخل المدينة المنورة فقط. يمكنك الاطلاع على المنيو ومعلومات المحل."
+          : "Brew Café currently serves Madinah only. You can still browse our menu and café info below."}
+      </p>
+      <button type="button" onClick={() => setLocationStatus("inside")}
+        className="h-13 px-10 rounded-2xl bg-zinc-900 border border-zinc-700 text-white font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all mb-3 shadow-xl">
+        {lang === "ar" ? "تصفح المنيو فقط ←" : "Browse Menu Only →"}
+      </button>
+      <p className="text-[10px] text-zinc-600 font-bold">
+        {lang === "ar" ? "لن تتمكن من إتمام أي طلب" : "Ordering will be disabled in your area"}
+      </p>
+    </div>
+  )}
+
+  {locationStatus === "denied" && (
+    <div className="fixed inset-0 z-[9998] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">📍</div>
+      <p className="text-[10px] uppercase tracking-[0.3em] text-[#d9ab7d] font-black mb-3">Location Required</p>
+      <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
+        {lang === "ar" ? "هل أنت في المدينة المنورة؟" : "Are you in Madinah?"}
+      </h2>
+      <p className="text-sm text-zinc-400 leading-relaxed max-w-xs mb-8">
+        {lang === "ar"
+          ? "لم نتمكن من تحديد موقعك تلقائياً. يرجى تأكيد موقعك للمتابعة."
+          : "We couldn't detect your location automatically. Please confirm to continue."}
+      </p>
+      <div className="flex flex-col gap-3 w-full max-w-xs">
+        <button type="button" onClick={() => setLocationStatus("inside")}
+          className="h-14 rounded-2xl bg-[#800020] text-white font-black text-sm uppercase tracking-widest hover:bg-[#a0002c] transition-all shadow-lg shadow-[#800020]/30 flex items-center justify-center gap-2">
+          ✅ {lang === "ar" ? "نعم، أنا في المدينة" : "Yes, I'm in Madinah"}
+        </button>
+        <button type="button" onClick={() => setLocationStatus("outside")}
+          className="h-14 rounded-2xl bg-zinc-900 border border-zinc-700 text-zinc-300 font-black text-sm uppercase tracking-widest hover:bg-zinc-800 transition-all flex items-center justify-center gap-2">
+          ❌ {lang === "ar" ? "لا، أنا خارجها" : "No, I'm outside Madinah"}
+        </button>
+      </div>
+    </div>
+  )}
+  {/* HERO */}
             <div className="relative h-[55vh] sm:h-[65vh] overflow-hidden mb-0">
               {brewGallery.map((img, idx) => (
                 <motion.div key={idx} initial={{ opacity: 0 }} animate={{ opacity: idx === heroIndex ? 1 : 0 }} transition={{ duration: 1.2, ease: "easeInOut" }} className="absolute inset-0">
@@ -1129,9 +1238,10 @@ useEffect(() => {
             <div className="space-y-4">
               {staffVisibleOrders.map(order => {
                 const elapsedMinutes = order.created_at ? Math.floor((Date.now() - order.created_at) / 60000) : 0;
+                const arrivalMinsLeft = order.arrivalTimestamp ? Math.max(0, Math.ceil((order.arrivalTimestamp - Date.now()) / 60000)) : null; const customerArriving = arrivalMinsLeft !== null && arrivalMinsLeft <= 2;
                 const isDelayed = elapsedMinutes >= 5 && order.status !== "Delivered" && order.status !== "Cancelled";
                 const statusLabels: Record<string, { en: string; ar: string }> = { Queued: { en: "Queued", ar: "انتظار" }, Preparing: { en: "Preparing", ar: "تحضير" }, Ready: { en: "Ready", ar: "جاهز" }, Cancelled: { en: "Cancelled", ar: "ملغي" }, Delivered: { en: "Delivered", ar: "مسلّم" } };
-                const cardBorder = isDelayed ? "border-red-800/60 bg-red-950/10" : order.status === "Ready" ? "border-emerald-800/40 bg-emerald-950/10" : order.status === "Preparing" ? "border-blue-800/40 bg-blue-950/10" : order.status === "Cancelled" ? "bg-zinc-950/20 border-zinc-900 opacity-60" : "bg-zinc-900/60 border-zinc-800";
+                const cardBorder = customerArriving ? "border-yellow-500/60 bg-yellow-950/10 shadow-lg shadow-yellow-900/20" : isDelayed ? "border-red-800/60 bg-red-950/10" : order.status === "Ready" ? "border-emerald-800/40 bg-emerald-950/10" : order.status === "Preparing" ? "border-blue-800/40 bg-blue-950/10" : order.status === "Cancelled" ? "bg-zinc-950/20 border-zinc-900 opacity-60" : "bg-zinc-900/60 border-zinc-800";
                 return (
                   <div key={order.id} className={`p-4 sm:p-5 rounded-2xl border transition-all ${cardBorder}`}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1142,14 +1252,22 @@ useEffect(() => {
                           <span className="text-xs text-zinc-400 font-bold">{order.customer}</span>
                           <span className="text-[11px] text-zinc-600 font-mono">({order.phone})</span>
                           <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase ${order.paymentStatus === "paid" ? "bg-emerald-950 text-emerald-400 border border-emerald-800" : order.paymentStatus === "refunded" ? "bg-zinc-900 text-zinc-400 border border-zinc-700" : "bg-amber-950 text-amber-400 border border-amber-800"}`}>{order.paymentMethod?.toUpperCase()} · {order.paymentStatus?.toUpperCase()}</span>
-                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-black ${isDelayed ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse" : "bg-[#800020]/30 text-zinc-300 border border-[#800020]/40"}`}>
-                            <Clock3 size={11} className={isDelayed ? "text-red-400" : "text-[#d9ab7d]"} />
-                            <span>{elapsedMinutes}{lang === "ar" ? " دقيقة" : " MIN"}</span>
-                          </div>
+                         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-black ${isDelayed ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse" : "bg-[#800020]/30 text-zinc-300 border border-[#800020]/40"}`}>
+  <Clock3 size={11} className={isDelayed ? "text-red-400" : "text-[#d9ab7d]"} />
+  <span>{elapsedMinutes}{lang === "ar" ? " دقيقة" : " MIN"}</span>
+</div>
+{arrivalMinsLeft !== null && (
+  <motion.div
+    animate={customerArriving ? { scale: [1, 1.08, 1] } : {}}
+    transition={{ duration: 0.8, repeat: Infinity }}
+    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-black ${arrivalMinsLeft === 0 ? "bg-yellow-400/30 text-yellow-300 border border-yellow-400/50 animate-pulse" : customerArriving ? "bg-yellow-900/40 text-yellow-400 border border-yellow-600/40 animate-pulse" : "bg-zinc-800/60 text-zinc-400 border border-zinc-700"}`}>
+    🚗 {arrivalMinsLeft === 0 ? (lang === "ar" ? "وصل الآن!" : "ARRIVED!") : `${arrivalMinsLeft} ${lang === "ar" ? "دق للوصول" : "MIN AWAY"}`}
+  </motion.div>
+)}
                         </div>
                         <div className="space-y-1 my-3">{order.items.map((it, idx) => <p key={idx} className="text-base font-black text-white">{it.qty}x {it.name}</p>)}</div>
                         <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-500 font-medium">
-                          <span>🚚 <strong className="text-zinc-300 capitalize">{order.method === "pickup" ? (lang === "ar" ? "استلام" : "Pickup") : (lang === "ar" ? "توصيل" : "Delivery")}</strong></span>
+                          <span>   {order.method === "curbside" ? "🚗" : order.method === "dine-in" ? "🪑" : "🏪"}   <strong className="text-zinc-300 capitalize ml-1">     {order.method === "curbside" ? (lang === "ar" ? "كيرب سايد" : "Curbside")      : order.method === "dine-in" ? (lang === "ar" ? "داخل المقهى" : "Dine-In")      : (lang === "ar" ? "استلام" : "Pickup")}   </strong> </span> {order.carPlate && <span className="text-[#d9ab7d] font-black text-[10px] bg-[#800020]/20 border border-[#800020]/30 px-2 py-0.5 rounded-lg">🔢 {order.carPlate.toUpperCase()}</span>} {order.tableNumber && <span className="text-emerald-400 font-black text-[10px] bg-emerald-950/30 border border-emerald-800/30 px-2 py-0.5 rounded-lg">🪑 {lang === "ar" ? "طاولة" : "Table"} {order.tableNumber}</span>}
                           {order.method === "delivery" && order.deliveryAddress && <span className="text-blue-400 text-[10px]">📍 {order.deliveryAddress}{order.deliveryArea ? ` · ${order.deliveryArea}` : ""}{order.deliveryLandmark ? ` · ${order.deliveryLandmark}` : ""}</span>}
                           <span>💰 <strong className="text-zinc-300">{order.total.toFixed(2)} SAR</strong></span>
                           {order.notes && <span className="text-amber-400 italic">📝 {order.notes}</span>}
@@ -1757,9 +1875,82 @@ useEffect(() => {
                 className={`w-full h-11 px-4 bg-black border rounded-xl text-sm text-white outline-none ${cartErrors.phone ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
               {cartErrors.phone && <p className="text-red-400 text-[10px] mt-1">{cartErrors.phone}</p>}
             </div>
-          <div className="w-full h-11 px-4 bg-zinc-900/60 border border-zinc-800 rounded-xl text-sm text-zinc-300 flex items-center font-bold">
-  🏪 {lang === "ar" ? "استلام من الفرع فقط" : "Pickup from Store Only"}
-</div> 
+          {/* ── ORDER MODE SELECTOR ── */}
+<div className="space-y-3">
+  <p className="text-[10px] uppercase font-black tracking-wider text-zinc-400">
+    {lang === "ar" ? "طريقة الاستلام" : "How will you receive your order?"}
+  </p>
+  <div className="grid grid-cols-2 gap-2">
+    <button type="button"
+      onClick={() => setCustomerInfo({ ...customerInfo, method: "curbside" })}
+      className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase border cursor-pointer active:scale-95 transition-all ${customerInfo.method === "curbside" ? "bg-[#800020] border-[#800020] text-white shadow-lg shadow-[#800020]/20" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"}`}>
+      <span className="text-2xl">🚗</span>
+      {lang === "ar" ? "كيرب سايد" : "Curbside"}
+    </button>
+    <button type="button"
+      onClick={() => setCustomerInfo({ ...customerInfo, method: "dine-in" })}
+      className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase border cursor-pointer active:scale-95 transition-all ${customerInfo.method === "dine-in" ? "bg-[#800020] border-[#800020] text-white shadow-lg shadow-[#800020]/20" : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"}`}>
+      <span className="text-2xl">🪑</span>
+      {lang === "ar" ? "داخل المقهى" : "Dine-In"}
+    </button>
+  </div>
+
+  {/* CURBSIDE FIELDS */}
+  {customerInfo.method === "curbside" && (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+      className="space-y-2 overflow-hidden">
+      <div className="p-4 rounded-2xl bg-[#800020]/10 border border-[#800020]/30 space-y-3">
+        <p className="text-[10px] font-black text-[#d9ab7d] uppercase flex items-center gap-1.5">
+          🚗 {lang === "ar" ? "تفاصيل الوصول" : "Arrival Details"}
+        </p>
+        <p className="text-[10px] text-zinc-400 leading-relaxed">
+          {lang === "ar"
+            ? "اطلب من خارج المقهى — سيخرج لك الموظف فور وصولك"
+            : "Order from outside — staff will come to you the moment you arrive"}
+        </p>
+        <select
+          value={customerInfo.arrivalTime}
+          onChange={e => {
+            const mins = parseInt(e.target.value);
+            const ts = mins > 0 ? Date.now() + mins * 60000 : 0;
+            setCustomerInfo({ ...customerInfo, arrivalTime: e.target.value, arrivalTimestamp: ts } as CustomerInfo & { arrivalTimestamp: number });
+          }}
+          className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
+          <option value="">{lang === "ar" ? "متى ستصل؟ *" : "When will you arrive? *"}</option>
+          <option value="5">{lang === "ar" ? "خلال 5 دقائق 🔥" : "In 5 minutes 🔥"}</option>
+          <option value="10">{lang === "ar" ? "خلال 10 دقائق" : "In 10 minutes"}</option>
+          <option value="15">{lang === "ar" ? "خلال 15 دقيقة" : "In 15 minutes"}</option>
+          <option value="20">{lang === "ar" ? "خلال 20 دقيقة" : "In 20 minutes"}</option>
+          <option value="30">{lang === "ar" ? "خلال 30 دقيقة" : "In 30 minutes"}</option>
+          <option value="45">{lang === "ar" ? "خلال 45 دقيقة" : "In 45 minutes"}</option>
+        </select>
+        <input type="text"
+          placeholder={lang === "ar" ? "لوحة السيارة أو وصفها (اختياري)" : "Car plate or description (optional)"}
+          value={customerInfo.carPlate}
+          onChange={e => setCustomerInfo({ ...customerInfo, carPlate: e.target.value })}
+          className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020] uppercase placeholder:normal-case placeholder:text-zinc-600" />
+      </div>
+    </motion.div>
+  )}
+
+  {/* DINE-IN FIELDS */}
+  {customerInfo.method === "dine-in" && (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+      className="overflow-hidden">
+      <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/30 space-y-3">
+        <p className="text-[10px] font-black text-emerald-400 uppercase flex items-center gap-1.5">
+          🪑 {lang === "ar" ? "الجلوس داخل المقهى" : "Dining Inside"}
+        </p>
+        <input type="text"
+          placeholder={lang === "ar" ? "رقم الطاولة أو مكان جلوسك" : "Table number or seating area"}
+          value={customerInfo.tableNumber}
+          onChange={e => setCustomerInfo({ ...customerInfo, tableNumber: e.target.value })}
+          className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-emerald-600 placeholder:text-zinc-600" />
+      </div>
+    </motion.div>
+  )}
+</div>
+            
             <input type="text" maxLength={200}
               placeholder={lang === "ar" ? "ملاحظات خاصة (اختياري)" : "Special notes (optional)"}
               value={customerInfo.notes}
@@ -1796,17 +1987,23 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Place order */}
-            <button type="button" onClick={placeOrder} disabled={isOrderSending}
-              className="w-full h-14 rounded-xl bg-gradient-to-r from-[#800020] to-[#b00020] text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 active:scale-[0.98] transition-all">
-              <Zap size={16} />
-              {isOrderSending
-                ? (lang === "ar" ? "جاري الإرسال..." : "Sending...")
-                : customerInfo.paymentMethod === "online"
-                  ? (lang === "ar" ? "تأكيد وفتح واتساب" : "Confirm & Open WhatsApp")
-                  : (lang === "ar" ? "تأكيد الطلب" : "Place Order")}
-                </button>
-              </div>
+{/* Place order */}
+{locationStatus === "outside" ? (
+  <div className="w-full h-14 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center gap-2 text-zinc-500 font-black text-xs uppercase tracking-widest">
+    🚫 {lang === "ar" ? "الطلب غير متاح خارج المدينة" : "Ordering unavailable outside Madinah"}
+  </div>
+) : (
+  <button type="button" onClick={placeOrder} disabled={isOrderSending}
+    className="w-full h-14 rounded-xl bg-gradient-to-r from-[#800020] to-[#b00020] text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-60 active:scale-[0.98] transition-all">
+    <Zap size={16} />
+    {isOrderSending
+      ? (lang === "ar" ? "جاري الإرسال..." : "Sending...")
+      : customerInfo.paymentMethod === "online"
+        ? (lang === "ar" ? "تأكيد وفتح واتساب" : "Confirm & Open WhatsApp")
+        : (lang === "ar" ? "تأكيد الطلب" : "Place Order")}
+  </button>
+)}
+        </div>
            </>
          )}
         </div>{/* end scrollable */}

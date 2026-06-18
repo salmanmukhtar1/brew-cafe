@@ -28,7 +28,7 @@ type PaymentMethod = "cash" | "online";
 type PaymentStatus = "pending" | "paid" | "refunded";
 interface Order {
   id: number; customer: string; phone: string;
-  method: "pickup" | "delivery" | "curbside" | "dine-in";
+  method: "pickup" | "delivery" | "curbside";
   items: OrderItem[]; total: number; status: string;
   created_at: number; notes: string; previousStatus: string | null;
   paymentMethod: PaymentMethod; paymentStatus: PaymentStatus;
@@ -180,6 +180,39 @@ function FloatingParticles({ emojis, count = 18 }: { emojis: string[]; count?: n
         </motion.div>
       ))}
     </div>
+  );
+}
+
+/* =========================================================
+   LOCATION LOADING ROTATING TEXT
+========================================================= */
+const LOCATION_MSGS = [
+  { en: "Why choose Brew Café?", ar: "لماذا تختار بريو كافيه؟" },
+  { en: "Every cup roasted fresh daily.", ar: "كل كوب يُحضَّر طازجاً يومياً." },
+  { en: "Rated 4.4 ⭐ by 373 guests.", ar: "تقييم 4.4 ⭐ من 373 ضيف." },
+  { en: "Specialty grade beans only.", ar: "حبوب مختصة فقط." },
+  { en: "Madinah's finest coffee experience.", ar: "أفضل تجربة قهوة في المدينة." },
+];
+
+function LocationLoadingText({ lang }: { lang: string }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(p => (p + 1) % LOCATION_MSGS.length), 2500);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <AnimatePresence mode="wait">
+      <motion.p
+        key={idx}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.35 }}
+        className="text-xs text-zinc-400 leading-relaxed min-h-[36px] flex items-center justify-center px-2"
+      >
+        {lang === "ar" ? LOCATION_MSGS[idx].ar : LOCATION_MSGS[idx].en}
+      </motion.p>
+    </AnimatePresence>
   );
 }
 
@@ -425,7 +458,7 @@ export default function BrewCafeUltraElite() {
 
   useEffect(() => {
   if (!navigator.geolocation) {
-    setLocationStatus("denied");
+    setLocationStatus("outside");
     return;
   }
   navigator.geolocation.getCurrentPosition(
@@ -439,7 +472,7 @@ export default function BrewCafeUltraElite() {
     },
     () => {
       // User denied or error
-      setLocationStatus("denied");
+      setLocationStatus("outside");
     },
     { timeout: 8000, maximumAge: 0 }
   );
@@ -952,17 +985,26 @@ const newOrder = {
 
   {/* ── LOCATION GATE ── */}
   {locationStatus === "checking" && (
-    <div className="fixed inset-0 z-[9999] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        className="w-14 h-14 rounded-full border-4 border-zinc-800 border-t-[#d9ab7d] mb-6" />
-      <h2 className="text-xl font-black text-white mb-2">
-        {lang === "ar" ? "جاري تحديد موقعك..." : "Detecting your location..."}
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, y: 16 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-10 w-full max-w-[300px] rounded-3xl border border-zinc-800 bg-zinc-900/95 backdrop-blur-xl p-7 text-center shadow-2xl"
+    >
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+        className="w-12 h-12 rounded-full border-[3px] border-zinc-800 border-t-[#d9ab7d] mx-auto mb-5"
+      />
+      <h2 className="text-sm font-black text-white mb-4 tracking-tight">
+        {lang === "ar" ? "جاري تحديد موقعك" : "Finding your location"}
       </h2>
-      <p className="text-xs text-zinc-500">
-        {lang === "ar" ? "يرجى السماح بالوصول إلى موقعك" : "Please allow location access when prompted"}
-      </p>
-    </div>
-  )}
+      <LocationLoadingText lang={lang} />
+    </motion.div>
+  </div>
+)}
 
   {locationStatus === "outside" && (
     <div className="fixed inset-0 z-[9998] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
@@ -983,31 +1025,6 @@ const newOrder = {
       <p className="text-[10px] text-zinc-600 font-bold">
         {lang === "ar" ? "لن تتمكن من إتمام أي طلب" : "Ordering will be disabled in your area"}
       </p>
-    </div>
-  )}
-
-  {locationStatus === "denied" && (
-    <div className="fixed inset-0 z-[9998] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">🌐</div>
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#d9ab7d] font-black mb-3">Location Required</p>
-      <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
-        {lang === "ar" ? "هل أنت في المدينة المنورة؟" : "Are you in Madinah?"}
-      </h2>
-      <p className="text-sm text-zinc-400 leading-relaxed max-w-xs mb-8">
-        {lang === "ar"
-          ? "لم نتمكن من تحديد موقعك تلقائياً. يرجى تأكيد موقعك للمتابعة."
-          : "We couldn't detect your location automatically. Please confirm to continue."}
-      </p>
-      <div className="flex flex-col gap-3 w-full max-w-xs">
-        <button type="button" onClick={() => setLocationStatus("inside")}
-          className="h-14 rounded-2xl bg-[#800020] text-white font-black text-sm uppercase tracking-widest hover:bg-[#a0002c] transition-all shadow-lg shadow-[#800020]/30 flex items-center justify-center gap-2">
-          ✅ {lang === "ar" ? "نعم، أنا في المدينة" : "Yes, I'm in Madinah"}
-        </button>
-        <button type="button" onClick={() => setLocationStatus("outside")}
-          className="h-14 rounded-2xl bg-zinc-900 border border-zinc-700 text-zinc-300 font-black text-sm uppercase tracking-widest hover:bg-zinc-800 transition-all flex items-center justify-center gap-2">
-          ❌ {lang === "ar" ? "لا، أنا خارجها" : "No, I'm outside Madinah"}
-        </button>
-      </div>
     </div>
   )}
   {/* HERO */}
@@ -1908,13 +1925,15 @@ const newOrder = {
             ? "اطلب من خارج المقهى — سيخرج لك الموظف فور وصولك"
             : "Order from outside — staff will come to you the moment you arrive"}
         </p>
-        <select
-          value={customerInfo.arrivalTime}
-          onChange={e => {
-            const mins = parseInt(e.target.value);
-            const ts = mins > 0 ? Date.now() + mins * 60000 : 0;
-            setCustomerInfo({ ...customerInfo, arrivalTime: e.target.value, arrivalTimestamp: ts } as CustomerInfo & { arrivalTimestamp: number });
-          }}
+        onChange={e => {
+  if (e.target.value === "other") {
+    setCustomerInfo({ ...customerInfo, arrivalTime: "other" });
+    return;
+  }
+  const mins = parseInt(e.target.value);
+  const ts = mins > 0 ? Date.now() + mins * 60000 : 0;
+  setCustomerInfo({ ...customerInfo, arrivalTime: e.target.value, arrivalTimestamp: ts } as CustomerInfo & { arrivalTimestamp: number });
+}}
           className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
           <option value="">{lang === "ar" ? "متى ستصل؟ *" : "When will you arrive? *"}</option>
           <option value="5">{lang === "ar" ? "خلال 5 دقائق 🔥" : "In 5 minutes 🔥"}</option>
@@ -1923,6 +1942,7 @@ const newOrder = {
           <option value="20">{lang === "ar" ? "خلال 20 دقيقة" : "In 20 minutes"}</option>
           <option value="30">{lang === "ar" ? "خلال 30 دقيقة" : "In 30 minutes"}</option>
           <option value="45">{lang === "ar" ? "خلال 45 دقيقة" : "In 45 minutes"}</option>
+          <option value="other">{lang === "ar" ? "أخرى — اكتب وقتك" : "Other — type your own"}</option>
         </select>
         <input type="text"
           placeholder={lang === "ar" ? "لوحة السيارة أو وصفها (اختياري)" : "Car plate or description (optional)"}
@@ -1932,17 +1952,28 @@ const newOrder = {
       </div>
     </motion.div>
   )}
-
+{customerInfo.arrivalTime === "other" && (
+  <motion.input
+    initial={{ opacity: 0, height: 0 }}
+    animate={{ opacity: 1, height: "auto" }}
+    type="text"
+    autoFocus
+    placeholder={lang === "ar" ? "مثال: بعد 10 دقائق، أو بعد صلاة المغرب..." : "e.g. In about 10 min, after work..."}
+    value={customerInfo.notes.startsWith("ARRIVAL:") ? customerInfo.notes.replace("ARRIVAL:", "") : ""}
+    onChange={e => setCustomerInfo({ ...customerInfo, notes: "ARRIVAL:" + e.target.value })}
+    className="w-full h-11 px-4 bg-black border border-[#d9ab7d]/40 rounded-xl text-sm text-white outline-none focus:border-[#d9ab7d] placeholder:text-zinc-600 placeholder:normal-case"
+  />
+)}
   {/* DINE-IN FIELDS */}
   {customerInfo.method === "dine-in" && (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
       className="overflow-hidden">
       <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/30 space-y-3">
         <p className="text-[10px] font-black text-emerald-400 uppercase flex items-center gap-1.5">
-          🪑 {lang === "ar" ? "الجلوس داخل المقهى" : "Dining Inside"}
+          🪑 {lang === "ar" ? "داخل المقهى — استلم بنفسك" : "Dine-In — Pick up at counter"}
         </p>
         <input type="text"
-          placeholder={lang === "ar" ? "رقم الطاولة أو مكان جلوسك" : "Table number or seating area"}
+          placeholder={lang === "ar" ? "رقم طاولتك (حتى يناديك الموظف)" : "Your table number (staff will call you when ready)"}
           value={customerInfo.tableNumber}
           onChange={e => setCustomerInfo({ ...customerInfo, tableNumber: e.target.value })}
           className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-emerald-600 placeholder:text-zinc-600" />

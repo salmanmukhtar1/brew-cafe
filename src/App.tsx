@@ -1925,16 +1925,18 @@ const newOrder = {
             ? "اطلب من خارج المقهى — سيخرج لك الموظف فور وصولك"
             : "Order from outside — staff will come to you the moment you arrive"}
         </p>
-        onChange={e => {
-  if (e.target.value === "other") {
-    setCustomerInfo({ ...customerInfo, arrivalTime: "other" });
-    return;
-  }
-  const mins = parseInt(e.target.value);
-  const ts = mins > 0 ? Date.now() + mins * 60000 : 0;
-  setCustomerInfo({ ...customerInfo, arrivalTime: e.target.value, arrivalTimestamp: ts } as CustomerInfo & { arrivalTimestamp: number });
-}}
-          className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
+        <select
+  value={customerInfo.arrivalTime}
+  onChange={e => {
+    if (e.target.value === "other") {
+      setCustomerInfo({ ...customerInfo, arrivalTime: "other" });
+      return;
+    }
+    const mins = parseInt(e.target.value);
+    const ts = mins > 0 ? Date.now() + mins * 60000 : 0;
+    setCustomerInfo({ ...customerInfo, arrivalTime: e.target.value, arrivalTimestamp: ts } as CustomerInfo & { arrivalTimestamp: number });
+  }}
+  className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
           <option value="">{lang === "ar" ? "متى ستصل؟ *" : "When will you arrive? *"}</option>
           <option value="5">{lang === "ar" ? "خلال 5 دقائق 🔥" : "In 5 minutes 🔥"}</option>
           <option value="10">{lang === "ar" ? "خلال 10 دقائق" : "In 10 minutes"}</option>
@@ -1944,17 +1946,27 @@ const newOrder = {
           <option value="45">{lang === "ar" ? "خلال 45 دقيقة" : "In 45 minutes"}</option>
           <option value="other">{lang === "ar" ? "أخرى — اكتب وقتك" : "Other — type your own"}</option>
         </select>
-        <input type="text"
+<input type="text"
           placeholder={lang === "ar" ? "لوحة السيارة أو وصفها (اختياري)" : "Car plate or description (optional)"}
           value={customerInfo.carPlate}
           onChange={e => setCustomerInfo({ ...customerInfo, carPlate: e.target.value })}
           className="w-full h-11 px-4 bg-black border border-zinc-700 rounded-xl text-sm text-white outline-none focus:border-[#800020] uppercase placeholder:normal-case placeholder:text-zinc-600" />
+        {customerInfo.arrivalTime === "other" && (
+          <motion.input
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            type="text"
+            autoFocus
+            placeholder={lang === "ar" ? "مثال: بعد 10 دقائق، أو بعد صلاة المغرب..." : "e.g. In about 10 min, after work..."}
+            value={customerInfo.notes.startsWith("ARRIVAL:") ? customerInfo.notes.replace("ARRIVAL:", "") : ""}
+            onChange={e => setCustomerInfo({ ...customerInfo, notes: "ARRIVAL:" + e.target.value })}
+            className="w-full h-11 px-4 bg-black border border-[#d9ab7d]/40 rounded-xl text-sm text-white outline-none focus:border-[#d9ab7d] placeholder:text-zinc-600 placeholder:normal-case"
+          />
+        )}
       </div>
     </motion.div>
   )}
-{customerInfo.arrivalTime === "other" && (
-  <motion.input
-    initial={{ opacity: 0, height: 0 }}
+  initial={{ opacity: 0, height: 0 }}
     animate={{ opacity: 1, height: "auto" }}
     type="text"
     autoFocus
@@ -1962,8 +1974,6 @@ const newOrder = {
     value={customerInfo.notes.startsWith("ARRIVAL:") ? customerInfo.notes.replace("ARRIVAL:", "") : ""}
     onChange={e => setCustomerInfo({ ...customerInfo, notes: "ARRIVAL:" + e.target.value })}
     className="w-full h-11 px-4 bg-black border border-[#d9ab7d]/40 rounded-xl text-sm text-white outline-none focus:border-[#d9ab7d] placeholder:text-zinc-600 placeholder:normal-case"
-  />
-)}
   {/* DINE-IN FIELDS */}
   {customerInfo.method === "dine-in" && (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}

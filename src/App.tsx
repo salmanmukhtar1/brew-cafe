@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ShoppingBag, Plus, Minus, Trash2, X, MapPin, Lock, ChefHat, LayoutDashboard,
-  Database, Bot, TrendingUp, PlusCircle, Search, Clock3, ShieldCheck, BellRing,
+  Database, Bot, TrendingUp, PlusCircle, Search, Clock3, ShieldCheck, BellRing, 
   PanelLeftClose, PanelLeftOpen, Settings, Receipt, LogOut, Calendar, Check,
   DollarSign, Zap, Cpu, Smartphone, RotateCcw, Timer, Eye, Wifi, RefreshCw,
   HelpCircle, Upload, Banknote, Printer, AlertTriangle, CheckCircle2,

@@ -988,7 +988,7 @@ const newOrder = {
 
   {locationStatus === "denied" && (
     <div className="fixed inset-0 z-[9998] bg-zinc-950/98 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-      <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">📍</div>
+      <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-5xl mb-6 shadow-2xl">🌐</div>
       <p className="text-[10px] uppercase tracking-[0.3em] text-[#d9ab7d] font-black mb-3">Location Required</p>
       <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
         {lang === "ar" ? "هل أنت في المدينة المنورة؟" : "Are you in Madinah?"}

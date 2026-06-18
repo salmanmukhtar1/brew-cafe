@@ -585,7 +585,6 @@ useEffect(() => {
     const errors: { name?: string; phone?: string; deliveryAddress?: string } = {};
     if (!isValidName(customerInfo.name)) errors.name = lang === "ar" ? "الاسم مطلوب (حرفان على الأقل)" : "Name is required (minimum 2 characters)";
     if (!isValidPhone(customerInfo.phone)) errors.phone = lang === "ar" ? "رقم الجوال غير صحيح" : "Please enter a valid phone number";
-    if (customerInfo.method === "delivery" && customerInfo.deliveryAddress.trim().length < 5) errors.deliveryAddress = lang === "ar" ? "العنوان مطلوب للتوصيل" : "Delivery address is required";
     setCartErrors(errors); return Object.keys(errors).length === 0;
   };
 
@@ -1758,37 +1757,9 @@ useEffect(() => {
                 className={`w-full h-11 px-4 bg-black border rounded-xl text-sm text-white outline-none ${cartErrors.phone ? "border-red-600" : "border-zinc-800 focus:border-[#800020]"}`} />
               {cartErrors.phone && <p className="text-red-400 text-[10px] mt-1">{cartErrors.phone}</p>}
             </div>
-            <select value={customerInfo.method}
-              onChange={e => setCustomerInfo({ ...customerInfo, method: e.target.value as "pickup" | "delivery" })}
-              className="w-full h-11 px-4 bg-black border border-zinc-800 rounded-xl text-sm text-white outline-none focus:border-[#800020]">
-              <option value="pickup">{lang === "ar" ? "استلام من الفرع" : "Pickup from Store"}</option>
-              <option value="delivery">{lang === "ar" ? "توصيل للعنوان" : "Home Delivery"}</option>
-            </select>
-            <AnimatePresence>
-              {customerInfo.method === "delivery" && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden">
-                  <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-800/30 space-y-2">
-                    <p className="text-[10px] font-black text-blue-400 uppercase flex items-center gap-1"><Navigation size={11} />Delivery Address</p>
-                    <div>
-                      <input type="text" required
-                        placeholder={lang === "ar" ? "الشارع ورقم المبنى *" : "Street & building number *"}
-                        value={customerInfo.deliveryAddress}
-                        onChange={e => { setCustomerInfo({ ...customerInfo, deliveryAddress: e.target.value }); setCartErrors(p => ({ ...p, deliveryAddress: "" })); }}
-                        className={`w-full h-10 px-3 bg-black border rounded-xl text-xs text-white outline-none ${cartErrors.deliveryAddress ? "border-red-600" : "border-zinc-800"}`} />
-                      {cartErrors.deliveryAddress && <p className="text-red-400 text-[10px] mt-1">{cartErrors.deliveryAddress}</p>}
-                    </div>
-                    <input type="text" placeholder={lang === "ar" ? "الحي (اختياري)" : "District (optional)"}
-                      value={customerInfo.deliveryArea}
-                      onChange={e => setCustomerInfo({ ...customerInfo, deliveryArea: e.target.value })}
-                      className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none" />
-                    <input type="text" placeholder={lang === "ar" ? "معلم قريب (اختياري)" : "Landmark (optional)"}
-                      value={customerInfo.deliveryLandmark}
-                      onChange={e => setCustomerInfo({ ...customerInfo, deliveryLandmark: e.target.value })}
-                      className="w-full h-10 px-3 bg-black border border-zinc-800 rounded-xl text-xs text-white outline-none" />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="w-full h-11 px-4 bg-zinc-900/60 border border-zinc-800 rounded-xl text-sm text-zinc-300 flex items-center font-bold">
+  🏪 {lang === "ar" ? "استلام من الفرع فقط" : "Pickup from Store Only"}
+</div> 
             <input type="text" maxLength={200}
               placeholder={lang === "ar" ? "ملاحظات خاصة (اختياري)" : "Special notes (optional)"}
               value={customerInfo.notes}
